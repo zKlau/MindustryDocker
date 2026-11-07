@@ -6,14 +6,20 @@ services:
         MINDUSTRY_VERSION: ${MINDUSTRY_VERSION:-latest}
     container_name: mindustry
     restart: unless-stopped
+    # Time to save the world on shutdown before Docker kills the container.
+    stop_grace_period: 30s
     environment:
       MINDUSTRY_SERVER_NAME: ${MINDUSTRY_SERVER_NAME:-}
       MINDUSTRY_START_COMMANDS: ${MINDUSTRY_START_COMMANDS:-config port 6567,host}
       JAVA_OPTS: ${JAVA_OPTS:--Xmx1G}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
-      # Public port (from .env) -> Mindustry's fixed internal port 6567. Both TCP and UDP are needed.
+      # Game: public port (from .env) -> Mindustry's fixed internal port 6567. Both TCP and UDP are needed.
       - "${SERVER_PORT:-6567}:6567/tcp"
       - "${SERVER_PORT:-6567}:6567/udp"
+      # Web dashboard (plain HTTP). Point a Cloudflare Tunnel hostname at it for HTTPS.
+      # Don't port-forward this one on your router.
+      - "${DASHBOARD_PORT:-8080}:8080/tcp"
     volumes:
       - mindustry-data:/data
     # Lets you use the server console with `docker attach mindustry` (detach with Ctrl+P, Ctrl+Q).

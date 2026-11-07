@@ -1,0 +1,52 @@
+/* Data tables and badges. */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+td.actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 14px 0;
+  color: var(--muted);
+}
+
+.badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.badge.serpulo {
+  background: color-mix(in srgb, var(--serpulo) 18%, transparent);
+  color: var(--serpulo);
+}
+
+.badge.erekir {
+  background: color-mix(in srgb, var(--erekir) 18%, transparent);
+  color: var(--erekir);
+}
+
+.badge.bad {
+  background: color-mix(in srgb, var(--bad) 18%, transparent);
+  color: var(--bad);
+}

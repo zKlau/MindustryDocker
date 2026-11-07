@@ -1,0 +1,59 @@
+/* Design tokens, reset and typography. */
+
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-2: #1e222b;
+  --border: #2a2f3a;
+  --text: #e6e8ee;
+  --muted: #8b93a7;
+  --accent: #f0a63a;
+  --accent-ink: #1a1206;
+  --ok: #4cc38a;
+  --bad: #e5604d;
+  --serpulo: #f0a63a;
+  --erekir: #e07a5f;
+  --radius: 10px;
+  --radius-sm: 8px;
+  --font: system-ui, -apple-system, "Segoe UI", roboto, sans-serif;
+  --mono: ui-monospace, sfmono-regular, menlo, consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f5f8;
+    --panel: #fff;
+    --panel-2: #f0f2f6;
+    --border: #dde1e8;
+    --text: #1b1f27;
+    --muted: #626b7f;
+    --accent: #c97a0c;
+    --accent-ink: #fff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 var(--font);
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+small {
+  color: var(--muted);
+}

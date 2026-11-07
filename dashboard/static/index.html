@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mindustry Admin</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/components/card.css" />
+    <link rel="stylesheet" href="/css/components/button.css" />
+    <link rel="stylesheet" href="/css/components/form.css" />
+    <link rel="stylesheet" href="/css/components/table.css" />
+    <link rel="stylesheet" href="/css/components/toast.css" />
+    <link rel="stylesheet" href="/css/pages/login.css" />
+    <link rel="stylesheet" href="/css/pages/map.css" />
+    <link rel="stylesheet" href="/css/pages/console.css" />
+    <script type="module" src="/js/main.js"></script>
+  </head>
+  <body>
+    <div id="login" class="card login" hidden>
+      <h2>Mindustry Admin</h2>
+      <p class="hint">Enter the admin password.</p>
+      <form id="loginForm">
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+        <button class="btn primary">Log in</button>
+      </form>
+    </div>
+
+    <div id="app" hidden>
+      <header class="app-header">
+        <h1 id="title">Mindustry</h1>
+        <span class="pill" id="statePill">…</span>
+        <span class="spacer"></span>
+        <button class="btn small" id="logoutButton">Log out</button>
+      </header>
+
+      <nav class="tabs" id="tabs">
+        <button data-tab="overview" class="active">Overview</button>
+        <button data-tab="map">Map</button>
+        <button data-tab="rules">Rules</button>
+        <button data-tab="saves">Saves</button>
+        <button data-tab="players">Players</button>
+        <button data-tab="mods">Mods</button>
+        <button data-tab="settings">Settings</button>
+        <button data-tab="console">Console</button>
+      </nav>
+
+      <main class="content">
+        <!-- Overview -->
+        <section id="overview" class="tab-panel active">
+          <div class="card"><div class="tiles" id="tiles"></div></div>
+          <div class="card">
+            <h2>Quick actions</h2>
+            <p class="hint">Changes apply to the running game immediately.</p>
+            <div class="row">
+              <button class="btn" id="pauseButton">Pause</button>
+              <button class="btn" id="waveButton">Send next wave now</button>
+              <button class="btn" id="fillButton">Fill core with items</button>
+              <button class="btn danger" id="gameOverButton">Force game over</button>
+              <button class="btn danger" id="restartButton">Restart server</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Broadcast message</h2>
+            <form class="row" id="sayForm">
+              <input
+                type="text"
+                id="sayMessage"
+                class="grow"
+                placeholder="Message to all players"
+                maxlength="200"
+              />
+              <button class="btn primary">Send</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Map -->
+        <section id="map" class="tab-panel">
+          <div class="card">
+            <h2>Choose a map</h2>
+            <p class="hint">
+              The planet comes with the map. Campaign sectors include all Serpulo and Erekir story maps.
+              Players stay connected when the map changes.
+            </p>
+            <div class="row">
+              <div class="segmented" id="planetFilter">
+                <button data-planet="" class="active">All planets</button>
+                <button data-planet="serpulo">Serpulo</button>
+                <button data-planet="erekir">Erekir</button>
+              </div>
+              <input type="text" id="mapSearch" class="grow" placeholder="Search maps" />
+            </div>
+            <div id="mapGroups"></div>
+          </div>
+          <div class="card selected-map">
+            <img class="map-preview" id="selectedMapPreview" alt="" hidden />
+            <div class="selected-map-body">
+              <h2 id="selectedMapName">No map selected</h2>
+              <p class="hint" id="selectedMapInfo">Click a map above.</p>
+              <div class="row">
+                <select id="modeSelect">
+                  <option value="survival">Survival</option>
+                  <option value="sandbox">Sandbox</option>
+                  <option value="attack">Attack</option>
+                  <option value="pvp">PvP</option>
+                </select>
+                <button class="btn primary" id="hostButton" disabled>Play this map now</button>
+                <button class="btn" id="nextButton" disabled>Play after current game ends</button>
+                <button class="btn danger" id="deleteMapButton" hidden>Delete uploaded map</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Upload a custom map</h2>
+            <p class="hint">
+              A Mindustry map file (.msav), for example exported from the in-game map editor.
+            </p>
+            <div class="row">
+              <input type="file" id="mapFile" accept=".msav" />
+              <button class="btn" id="uploadMapButton">Upload</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rules -->
+        <section id="rules" class="tab-panel">
+          <div class="card">
+            <h2>Presets</h2>
+            <p class="hint">One click. Applied live and kept for future maps.</p>
+            <div class="row" id="presets">
+              <button class="btn" data-preset="endless">Endless (never win by waves)</button>
+              <button class="btn" data-preset="manual">Waves only when I trigger them</button>
+              <button class="btn" data-preset="peaceful">Peaceful (no waves)</button>
+              <button class="btn" data-preset="chill">Chill (slow waves, faster building)</button>
+              <button class="btn" data-preset="creative">Creative (infinite resources)</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Game rules</h2>
+            <p class="hint">
+              Applied to the running game right away and saved as global rules, so new maps use them too.
+            </p>
+            <form id="rulesForm">
+              <div class="fields" id="rulesFields"></div>
+              <div class="row end">
+                <button class="btn primary">Apply</button>
+                <button class="btn" type="button" id="resetRulesButton">Reset to map defaults</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Saves -->
+        <section id="saves" class="tab-panel">
+          <div class="card">
+            <h2>Save current game</h2>
+            <form class="row" id="saveForm">
+              <input
+                type="text"
+                id="saveName"
+                placeholder="Name, e.g. my_base"
+                pattern="[A-Za-z0-9_\-]+"
+                title="Letters, numbers, - and _"
+              />
+              <button class="btn primary">Save</button>
+            </form>
+          </div>
+          <div class="card">
+            <h2>Saved games</h2>
+            <p class="hint">
+              "last-session" is written automatically on every shutdown or restart. Turn on autosave in
+              Settings for regular backups.
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Saved</th>
+                  <th>Size</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="saveRows"></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h2>Upload a save</h2>
+            <p class="hint">A .msav save file, for example from your own game's saves folder.</p>
+            <div class="row">
+              <input type="file" id="saveFile" accept=".msav" />
+              <button class="btn" id="uploadSaveButton">Upload</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Players -->
+        <section id="players" class="tab-panel">
+          <div class="card">
+            <h2>Online players</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Team</th>
+                  <th>IP</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="playerRows"></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h2>Bans</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Player / IP</th>
+                  <th>ID</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="banRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Mods -->
+        <section id="mods" class="tab-panel">
+          <div class="card">
+            <h2>Installed mods and plugins</h2>
+            <p class="hint">
+              Changes take effect after "Restart server". Players need the same content mods installed to
+              join.
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Mod</th>
+                  <th>File</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="modRows"></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h2>Upload a mod or plugin</h2>
+            <p class="hint">A .jar or .zip file, from the mod's GitHub releases page.</p>
+            <div class="row">
+              <input type="file" id="modFile" accept=".jar,.zip" />
+              <button class="btn" id="uploadModButton">Upload</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Settings -->
+        <section id="settings" class="tab-panel">
+          <div class="card">
+            <h2>When the server starts</h2>
+            <p class="hint">Used after a container restart, a redeploy, a crash or "Restart server".</p>
+            <form id="startupForm">
+              <label class="radio">
+                <input type="radio" name="mode" value="resume" />
+                <span>
+                  Continue the last game
+                  <small id="resumeInfo">Loads the save from the last shutdown or the newest autosave.</small>
+                </span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="mode" value="map" />
+                <span>
+                  Always start a specific map
+                  <small>Uses the map selected on the Map tab when you save this.</small>
+                </span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="mode" value="env" />
+                <span>
+                  Use MINDUSTRY_START_COMMANDS
+                  <small>The commands from the environment variables (default: random map).</small>
+                </span>
+              </label>
+              <div class="row end">
+                <button class="btn primary">Save startup behaviour</button>
+                <span class="hint" id="startupMap"></span>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <h2>Server settings</h2>
+            <p class="hint">Saved on the server and kept across restarts.</p>
+            <form id="configForm">
+              <div class="fields" id="configFields"></div>
+              <div class="row end"><button class="btn primary">Save settings</button></div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Console -->
+        <section id="console" class="tab-panel">
+          <div class="card">
+            <div class="log" id="log"></div>
+            <form class="row end" id="commandForm">
+              <input
+                type="text"
+                id="commandInput"
+                class="grow command-input"
+                placeholder="Server command, e.g. help"
+                autocomplete="off"
+              />
+              <button class="btn primary">Run</button>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Templates: cloned and filled by the JavaScript modules. -->
+    <template id="tileTemplate">
+      <div class="tile">
+        <div class="tile-label"></div>
+        <div class="tile-value"></div>
+      </div>
+    </template>
+
+    <template id="switchFieldTemplate">
+      <div class="field">
+        <div>
+          <label class="field-label"></label>
+          <small class="field-help"></small>
+        </div>
+        <label class="switch">
+          <input type="checkbox" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </template>
+
+    <template id="inputFieldTemplate">
+      <div class="field">
+        <div>
+          <label class="field-label"></label>
+          <small class="field-help"></small>
+        </div>
+        <input />
+      </div>
+    </template>
+
+    <template id="mapGroupTemplate">
+      <div>
+        <div class="map-group-title"></div>
+        <div class="map-grid"></div>
+      </div>
+    </template>
+
+    <template id="mapCardTemplate">
+      <button class="map-card" type="button">
+        <img class="map-preview" alt="" loading="lazy" />
+        <span class="map-info">
+          <span class="map-name"></span>
+          <small class="map-size"></small>
+          <span class="badge map-planet"></span>
+        </span>
+      </button>
+    </template>
+
+    <template id="emptyRowTemplate">
+      <tr>
+        <td class="empty"></td>
+      </tr>
+    </template>
+
+    <template id="saveRowTemplate">
+      <tr>
+        <td>
+          <span class="save-name"></span>
+          <span class="badge save-auto" hidden>auto</span>
+        </td>
+        <td class="save-date"></td>
+        <td class="save-size"></td>
+        <td class="actions">
+          <button class="btn small" data-action="load">Load</button>
+          <a class="btn small save-download">Download</a>
+          <button class="btn small danger" data-action="delete">Delete</button>
+        </td>
+      </tr>
+    </template>
+
+    <template id="playerRowTemplate">
+      <tr>
+        <td>
+          <span class="player-name"></span>
+          <span class="badge player-admin" hidden>admin</span>
+        </td>
+        <td class="player-team"></td>
+        <td class="player-ip"></td>
+        <td class="actions">
+          <button class="btn small" data-action="admin"></button>
+          <button class="btn small" data-action="kick">Kick</button>
+          <button class="btn small danger" data-action="ban">Ban</button>
+        </td>
+      </tr>
+    </template>
+
+    <template id="banRowTemplate">
+      <tr>
+        <td class="ban-who"></td>
+        <td class="ban-id"></td>
+        <td class="actions"><button class="btn small" data-action="unban">Unban</button></td>
+      </tr>
+    </template>
+
+    <template id="modRowTemplate">
+      <tr>
+        <td>
+          <span class="mod-name"></span>
+          <small class="mod-version"></small>
+        </td>
+        <td>
+          <span class="mod-file"></span>
+          <small class="mod-size"></small>
+        </td>
+        <td><span class="badge mod-status"></span></td>
+        <td class="actions"><button class="btn small danger" data-action="delete">Delete</button></td>
+      </tr>
+    </template>
+
+    <template id="logLineTemplate">
+      <div class="log-line"></div>
+    </template>
+  </body>
+</html>

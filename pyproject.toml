@@ -1,0 +1,39 @@
+# Tooling configuration only; the dashboard has no Python dependencies.
+[project]
+name = "mindustry-dashboard"
+version = "1.0.0"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["dashboard"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W",  # pycodestyle
+  "F",       # pyflakes
+  "I",       # import sorting
+  "B",       # bugbear
+  "UP",      # modern syntax
+  "N",       # naming
+  "C4",      # comprehensions
+  "SIM",     # simplifications
+  "RET",     # return statements
+  "PTH",     # pathlib
+  "C90",     # complexity
+]
+ignore = [
+  "SIM108",  # don't suggest inline `x if c else y`; explicit if/else blocks are preferred here
+]
+
+[tool.ruff.lint.per-file-ignores]
+# BaseHTTPRequestHandler requires the do_GET/do_POST method names.
+"dashboard/app/web/handler.py" = ["N802"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"

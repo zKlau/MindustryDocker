@@ -1,0 +1,15 @@
+/* Login screen. */
+
+.login {
+  max-width: 340px;
+  margin: 14vh auto;
+}
+
+.login input,
+.login .btn {
+  width: 100%;
+}
+
+.login input {
+  margin: 10px 0;
+}

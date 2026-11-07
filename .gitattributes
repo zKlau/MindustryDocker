@@ -1,3 +1,4 @@
-# Shell scripts must keep LF endings or they fail inside the Linux container.
-*.sh text eol=lf
-Dockerfile text eol=lf
+# Keep LF everywhere (matches .editorconfig and Prettier); shell scripts break with CRLF in the container.
+* text=auto eol=lf
+*.png binary
+*.msav binary

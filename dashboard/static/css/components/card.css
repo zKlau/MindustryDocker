@@ -1,0 +1,45 @@
+/* Cards and status tiles. */
+
+.card {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.hint {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+}
+
+.tile-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tile-value {
+  margin-top: 2px;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

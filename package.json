@@ -1,0 +1,19 @@
+{
+  "name": "mindustry-docker-dashboard",
+  "private": true,
+  "description": "Development tooling (formatting and linting) for the dashboard frontend. Not used at runtime.",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write \"dashboard/static/**/*.{js,css,html}\" \"*.{json,md,yml}\" && ruff format dashboard tools",
+    "lint": "eslint dashboard/static && stylelint \"dashboard/static/**/*.css\" && prettier --check \"dashboard/static/**/*.{js,css,html}\" && ruff check dashboard tools && ruff format --check dashboard tools",
+    "lint:fix": "eslint --fix dashboard/static && stylelint --fix \"dashboard/static/**/*.css\" && ruff check --fix dashboard tools"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.17.0",
+    "eslint": "9.17.0",
+    "globals": "15.14.0",
+    "prettier": "3.4.2",
+    "stylelint": "16.12.0",
+    "stylelint-config-standard": "36.0.1"
+  }
+}

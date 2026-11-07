@@ -1,0 +1,26 @@
+/* Console tab: live log. */
+
+.log {
+  height: 60vh;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #0a0c10;
+  color: #cfd5e1;
+  font: 12.5px/1.5 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-line.error {
+  color: #ff8a7a;
+}
+
+.log-line.warn {
+  color: #f2c46d;
+}
+
+.command-input {
+  font-family: var(--mono);
+}

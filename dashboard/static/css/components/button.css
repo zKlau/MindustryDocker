@@ -1,0 +1,56 @@
+/* Buttons and segmented controls. */
+
+.btn {
+  display: inline-block;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--muted);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.btn.danger {
+  color: var(--bad);
+}
+
+.btn.small {
+  padding: 4px 9px;
+  font-size: 13px;
+}
+
+.segmented {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.segmented button {
+  padding: 6px 12px;
+  border: 0;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.segmented button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}

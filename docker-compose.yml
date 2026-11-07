@@ -1,0 +1,24 @@
+services:
+  mindustry:
+    build:
+      context: .
+      args:
+        MINDUSTRY_VERSION: ${MINDUSTRY_VERSION:-latest}
+    container_name: mindustry
+    restart: unless-stopped
+    environment:
+      MINDUSTRY_SERVER_NAME: ${MINDUSTRY_SERVER_NAME:-}
+      MINDUSTRY_START_COMMANDS: ${MINDUSTRY_START_COMMANDS:-config port 6567,host}
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx1G}
+    ports:
+      # Public port (from .env) -> Mindustry's fixed internal port 6567. Both TCP and UDP are needed.
+      - "${SERVER_PORT:-6567}:6567/tcp"
+      - "${SERVER_PORT:-6567}:6567/udp"
+    volumes:
+      - mindustry-data:/data
+    # Lets you use the server console with `docker attach mindustry` (detach with Ctrl+P, Ctrl+Q).
+    stdin_open: true
+    tty: true
+
+volumes:
+  mindustry-data:

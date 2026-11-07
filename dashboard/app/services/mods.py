@@ -2,7 +2,7 @@
 
 from .. import settings
 from ..server import server
-from ..validation import filename
+from ..validation import filename, strip_colors
 
 EXTENSIONS = (".jar", ".zip")
 
@@ -35,7 +35,10 @@ def _describe(path, loaded):
     entry = {"file": path.name, "size": path.stat().st_size, "name": path.stem, "version": "", "error": False}
     entry["loaded"] = info is not None
     if info is not None:
-        entry.update(name=info["name"] or path.stem, version=info["version"], error=info["error"])
+        version_lines = strip_colors(info["version"]).splitlines() or [""]
+        entry.update(
+            name=strip_colors(info["name"]) or path.stem, version=version_lines[0], error=info["error"]
+        )
     return entry
 
 

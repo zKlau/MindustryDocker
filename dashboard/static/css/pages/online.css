@@ -1,0 +1,58 @@
+/* Online maps (MindustryTool) and online mods (official mod list). */
+
+.online-grid {
+  max-height: 640px;
+  margin-top: 14px;
+}
+
+.online-map {
+  cursor: default;
+}
+
+.online-map:hover {
+  border-color: var(--border);
+}
+
+.online-map-stats {
+  display: block;
+}
+
+.online-map-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.online-map-actions .btn {
+  flex: 1;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.online-mod-name {
+  font-weight: 600;
+}
+
+.online-mod-author {
+  margin-left: 4px;
+}
+
+.online-mod-description {
+  display: block;
+  max-width: 640px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.online-mod-stars,
+.online-mod-version {
+  white-space: nowrap;
+}

@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/css/pages/login.css" />
     <link rel="stylesheet" href="/css/pages/map.css" />
     <link rel="stylesheet" href="/css/pages/console.css" />
+    <link rel="stylesheet" href="/css/pages/online.css" />
     <script type="module" src="/js/main.js"></script>
   </head>
   <body>
@@ -109,6 +110,32 @@
                 <button class="btn" id="nextButton" disabled>Play after current game ends</button>
                 <button class="btn danger" id="deleteMapButton" hidden>Delete uploaded map</button>
               </div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Online maps</h2>
+            <p class="hint">
+              Thousands of community maps from MindustryTool (mindustry-tool.com). Installed maps appear under
+              "Uploaded maps" above.
+            </p>
+            <form class="row" id="onlineMapForm">
+              <input type="text" id="onlineMapSearch" class="grow" placeholder="Search MindustryTool maps" />
+              <select id="onlineMapSort">
+                <option value="popular">Most downloaded</option>
+                <option value="liked">Most liked</option>
+                <option value="newest">Newest</option>
+              </select>
+              <select id="onlineMapMode" title="Game mode for Install &amp; play">
+                <option value="survival">Survival</option>
+                <option value="sandbox">Sandbox</option>
+                <option value="attack">Attack</option>
+                <option value="pvp">PvP</option>
+              </select>
+            </form>
+            <div class="map-grid online-grid" id="onlineMaps"></div>
+            <p class="empty" id="onlineMapsStatus" hidden></p>
+            <div class="row end">
+              <button class="btn" id="onlineMapsMore" hidden>Load more</button>
             </div>
           </div>
           <div class="card">
@@ -246,6 +273,39 @@
             </table>
           </div>
           <div class="card">
+            <h2>Online mods</h2>
+            <p class="hint" id="onlineModsHint">
+              The official Mindustry mod list (the same one as the in-game mod browser). Mods are downloaded
+              from their GitHub releases and load after "Restart server".
+            </p>
+            <form class="row" id="onlineModForm">
+              <input type="text" id="onlineModSearch" class="grow" placeholder="Search mods" />
+              <select id="onlineModSort">
+                <option value="stars">Most stars</option>
+                <option value="updated">Recently updated</option>
+                <option value="name">Name</option>
+              </select>
+              <label class="checkbox">
+                <input type="checkbox" id="onlineModCompatible" checked />
+                Only compatible with this server
+              </label>
+            </form>
+            <table>
+              <thead>
+                <tr>
+                  <th>Mod</th>
+                  <th>Stars</th>
+                  <th>Version</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="onlineModRows"></tbody>
+            </table>
+            <div class="row end">
+              <button class="btn" id="onlineModsMore" hidden>Load more</button>
+            </div>
+          </div>
+          <div class="card">
             <h2>Upload a mod or plugin</h2>
             <p class="hint">A .jar or .zip file, from the mod's GitHub releases page.</p>
             <div class="row">
@@ -366,6 +426,35 @@
           <span class="badge map-planet"></span>
         </span>
       </button>
+    </template>
+
+    <template id="onlineMapCardTemplate">
+      <div class="map-card online-map">
+        <img class="map-preview" alt="" loading="lazy" />
+        <span class="map-info">
+          <span class="map-name"></span>
+          <small class="online-map-stats"></small>
+        </span>
+        <span class="online-map-actions">
+          <button class="btn small" type="button" data-action="install">Install</button>
+          <button class="btn small primary" type="button" data-action="play">Install &amp; play</button>
+        </span>
+      </div>
+    </template>
+
+    <template id="onlineModRowTemplate">
+      <tr>
+        <td>
+          <span class="online-mod-name"></span>
+          <small class="online-mod-author"></small>
+          <span class="badge online-mod-kind"></span>
+          <span class="badge bad online-mod-incompatible" hidden></span>
+          <small class="online-mod-description"></small>
+        </td>
+        <td class="online-mod-stars"></td>
+        <td class="online-mod-version"></td>
+        <td class="actions"><button class="btn small" data-action="install">Install</button></td>
+      </tr>
     </template>
 
     <template id="emptyRowTemplate">

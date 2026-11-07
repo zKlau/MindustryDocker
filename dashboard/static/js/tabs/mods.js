@@ -1,6 +1,7 @@
 // Mods: list, upload and delete mod/plugin files.
 import { get, post, upload } from "../api.js";
 import { $, cloneTemplate, emptyRow, fillText, formatBytes, render, run, setupUploader } from "../ui.js";
+import * as onlineMods from "./online-mods.js";
 
 const COLUMNS = 4;
 
@@ -31,6 +32,7 @@ function createRow(mod) {
 }
 
 export async function load() {
+  onlineMods.load();
   const body = $("#modRows");
   try {
     const mods = await get("/api/mods");
@@ -59,6 +61,7 @@ async function onClick(event) {
 }
 
 export function init() {
+  onlineMods.init(load);
   $("#modRows").addEventListener("click", onClick);
   setupUploader($("#modFile"), $("#uploadModButton"), (file) => upload("/api/mods/upload", file), load);
 }

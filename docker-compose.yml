@@ -13,6 +13,7 @@ services:
       MINDUSTRY_START_COMMANDS: ${MINDUSTRY_START_COMMANDS:-config port 6567,host}
       JAVA_OPTS: ${JAVA_OPTS:--Xmx1G}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     ports:
       # Game: public port (from .env) -> Mindustry's fixed internal port 6567. Both TCP and UDP are needed.
       - "${SERVER_PORT:-6567}:6567/tcp"

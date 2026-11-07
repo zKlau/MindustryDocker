@@ -8,7 +8,7 @@ import re
 
 from .. import settings
 from ..server import server
-from ..validation import filename, gamemode, js_string, map_arg, map_name, sector
+from ..validation import filename, gamemode, is_msav, js_string, map_arg, map_name, sector
 
 MAPS_JS = """(function(){
   var list = [];
@@ -92,7 +92,7 @@ def set_next(name):
 
 def upload(file_name, data):
     file_name = filename(file_name, (".msav",))
-    if not data.startswith(b"MSAV"):
+    if not is_msav(data):
         raise ValueError("Not a Mindustry map file")
     settings.MAPS_DIR.mkdir(parents=True, exist_ok=True)
     (settings.MAPS_DIR / file_name).write_bytes(data)

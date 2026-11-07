@@ -13,6 +13,7 @@ GAME_PORT = 6567  # fixed inside the container; the public port is mapped by Doc
 
 # Dashboard
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")  # optional, raises GitHub's 60 requests/hour limit
 HTTP_PORT = int(os.environ.get("DASHBOARD_INTERNAL_PORT", "8080"))
 STATIC_DIR = pathlib.Path(__file__).resolve().parent.parent / "static"
 

@@ -2,7 +2,7 @@
 
 from .. import settings
 from ..server import server
-from ..validation import slot
+from ..validation import is_msav, slot
 
 
 def list_all():
@@ -44,7 +44,7 @@ def delete(name):
 
 def upload(file_name, data):
     stem = file_name.rsplit(".", 1)[0].replace(" ", "_")
-    if not data.startswith(b"MSAV"):
+    if not is_msav(data):
         raise ValueError("Not a Mindustry save file")
     settings.SAVES_DIR.mkdir(parents=True, exist_ok=True)
     path(stem).write_bytes(data)

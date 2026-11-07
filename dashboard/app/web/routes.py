@@ -1,7 +1,19 @@
 """API endpoints. Each one is a thin wrapper around a service function."""
 
 from ..server import server
-from ..services import game, maps, mods, players, previews, rules, saves, server_config, startup
+from ..services import (
+    game,
+    maps,
+    mods,
+    online_maps,
+    online_mods,
+    players,
+    previews,
+    rules,
+    saves,
+    server_config,
+    startup,
+)
 from . import auth
 from .router import ApiError, Response, route
 
@@ -109,6 +121,35 @@ def delete_map(req):
 def map_preview(req):
     image = previews.get(req.arg("kind", "map"), req.arg("name"))
     return Response(image, content_type="image/png", headers={"Cache-Control": "private, max-age=86400"})
+
+
+# ---------------------------------------------------------------- online maps (MindustryTool)
+
+
+@route("GET", "/api/online/maps")
+def search_online_maps(req):
+    return online_maps.search(req.arg("q"), req.arg("sort", "popular"), req.arg("page", "0") or 0)
+
+
+@route("GET", "/api/online/maps/details")
+def online_map_details(req):
+    return online_maps.details(req.arg("id"))
+
+
+@route("GET", "/api/online/maps/preview")
+def online_map_preview(req):
+    image = online_maps.preview(req.arg("id"))
+    return Response(image, content_type="image/png", headers={"Cache-Control": "private, max-age=86400"})
+
+
+@route("POST", "/api/online/maps/install")
+def install_online_map(req):
+    data = req.json()
+    if data.get("play"):
+        name = online_maps.install_and_play(data.get("id", ""), data.get("mode", "survival"))
+    else:
+        name = online_maps.install(data.get("id", ""))
+    return {"name": name}
 
 
 # ---------------------------------------------------------------- rules
@@ -242,6 +283,19 @@ def upload_mod(req):
 @route("POST", "/api/mods/delete")
 def delete_mod(req):
     mods.delete(req.json().get("file", ""))
+
+
+@route("GET", "/api/online/mods")
+def search_online_mods(req):
+    only_compatible = req.arg("compatible", "1") != "0"
+    return online_mods.search(
+        req.arg("q"), req.arg("sort", "stars"), req.arg("page", "0") or 0, only_compatible
+    )
+
+
+@route("POST", "/api/online/mods/install")
+def install_online_mod(req):
+    return online_mods.install(req.json().get("repo", ""))
 
 
 # ---------------------------------------------------------------- console

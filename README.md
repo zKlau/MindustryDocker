@@ -15,28 +15,29 @@ docker compose logs -f
 
 ## Settings (`.env`)
 
-| Variable                   | Default                 | What it does                                                                   |
-| -------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `SERVER_PORT`              | `6567`                  | Public game port on the host, forwarded to 6567 in the container (TCP and UDP) |
-| `ADMIN_PASSWORD`           | empty                   | Dashboard password. Empty = dashboard disabled                                 |
-| `DASHBOARD_PORT`           | `8080`                  | Host port for the dashboard (plain HTTP)                                       |
-| `MINDUSTRY_VERSION`        | `latest`                | Release tag to download at build time, for example `v156.2`                    |
-| `MINDUSTRY_SERVER_NAME`    | empty                   | Server name shown in the browser (no commas)                                   |
-| `MINDUSTRY_START_COMMANDS` | `config port 6567,host` | Console commands run at startup, comma-separated                               |
-| `JAVA_OPTS`                | `-Xmx1G`                | JVM options                                                                    |
+| Variable                   | Default                 | What it does                                                                                         |
+| -------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `SERVER_PORT`              | `6567`                  | Public game port on the host, forwarded to 6567 in the container (TCP and UDP)                       |
+| `ADMIN_PASSWORD`           | empty                   | Dashboard password. Empty = dashboard disabled                                                       |
+| `DASHBOARD_PORT`           | `8080`                  | Host port for the dashboard (plain HTTP)                                                             |
+| `GITHUB_TOKEN`             | empty                   | Optional GitHub token for installing mods (raises GitHub's 60 requests/hour limit, no scopes needed) |
+| `MINDUSTRY_VERSION`        | `latest`                | Release tag to download at build time, for example `v156.2`                                          |
+| `MINDUSTRY_SERVER_NAME`    | empty                   | Server name shown in the browser (no commas)                                                         |
+| `MINDUSTRY_START_COMMANDS` | `config port 6567,host` | Console commands run at startup, comma-separated                                                     |
+| `JAVA_OPTS`                | `-Xmx1G`                | JVM options                                                                                          |
 
 ## Dashboard
 
-| Tab      | What you can do                                                                                                                                                                                                   |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Overview | Map, planet, mode, wave, next-wave timer, players, play time, FPS, memory. Pause/resume, send next wave, fill core, force game over, restart server, broadcast a message                                          |
-| Map      | Pick any custom-game map or campaign sector (Serpulo and Erekir), filter by planet, play it now or after the current game. Players stay connected. Upload and delete custom `.msav` maps                          |
-| Rules    | Presets (endless, manual waves, peaceful, chill, creative) and individual rules: win wave, wave timer and interval, infinite resources, fog, build/unit/damage multipliers. Applied live and kept for future maps |
-| Saves    | Save, load, download, upload and delete saved games                                                                                                                                                               |
-| Players  | Online players with kick, ban and admin. Ban list with unban                                                                                                                                                      |
-| Mods     | Installed mods/plugins with load status, upload and delete                                                                                                                                                        |
-| Settings | What happens on start (continue last game, a fixed map, or env commands), plus name, description, MOTD, player limit, autosave, pause when empty, vote-kick                                                       |
-| Console  | Live server log and a command box for any server command                                                                                                                                                          |
+| Tab      | What you can do                                                                                                                                                                                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Overview | Map, planet, mode, wave, next-wave timer, players, play time, FPS, memory. Pause/resume, send next wave, fill core, force game over, restart server, broadcast a message                                                                                           |
+| Map      | Pick any custom-game map or campaign sector (Serpulo and Erekir) with previews, filter by planet, play it now or after the current game. Players stay connected. Browse, install and play community maps from MindustryTool. Upload and delete custom `.msav` maps |
+| Rules    | Presets (endless, manual waves, peaceful, chill, creative) and individual rules: win wave, wave timer and interval, infinite resources, fog, build/unit/damage multipliers. Applied live and kept for future maps                                                  |
+| Saves    | Save, load, download, upload and delete saved games                                                                                                                                                                                                                |
+| Players  | Online players with kick, ban and admin. Ban list with unban                                                                                                                                                                                                       |
+| Mods     | Installed mods/plugins with load status, upload and delete. Browse the official mod list (same as the in-game browser), filtered to versions your server supports, and install from GitHub in one click                                                            |
+| Settings | What happens on start (continue last game, a fixed map, or env commands), plus name, description, MOTD, player limit, autosave, pause when empty, vote-kick                                                                                                        |
+| Console  | Live server log and a command box for any server command                                                                                                                                                                                                           |
 
 ### Planets
 
@@ -45,6 +46,11 @@ The planet is part of the map: each map or campaign sector belongs to Serpulo or
 ### Keeping your world
 
 On every shutdown, redeploy or "Restart server", the world is saved as `last-session`. With the default startup setting ("Continue the last game"), the server loads the newest of that save and the autosaves when it starts again, so a redeploy doesn't throw away your base. `MINDUSTRY_START_COMMANDS` is only used when there is no save yet, or when you choose that option in Settings.
+
+### Online maps and mods
+
+- **Maps** come from [MindustryTool](https://mindustry-tool.com) through the same public API its game mod uses. No account is needed. The API is undocumented, so if it changes the online section shows an error and everything else keeps working.
+- **Mods** come from the [official mod list](https://github.com/Anuken/MindustryMods), the one the game's own mod browser uses. Java mods are installed from their GitHub release `.jar`, script/content mods from a release `.zip` or a zip of the repository. Only mods in that list can be installed this way. Installed mods load after "Restart server". Content mods must also be installed by every player.
 
 ### HTTPS
 
@@ -63,9 +69,10 @@ dashboard/
     state.py              dashboard-owned settings (rule overrides, startup behaviour)
     server.py             Mindustry process: console input, log buffer, JS queries
     validation.py         input checks for anything sent to the console
+    http_client.py        outgoing requests (MindustryTool, GitHub) with size limits
     data/                 block_colors.json (map colours for previews)
-    services/             one module per feature: game, maps, previews, rules, saves,
-                          players, mods, server_config, startup
+    services/             one module per feature: game, maps, previews, online_maps, online_mods,
+                          rules, saves, players, mods, server_config, startup
     web/                  HTTP layer: auth, router, routes (API endpoints), handler
   static/                 frontend (plain ES modules, no build step)
     index.html            page layout plus <template> elements for repeated pieces

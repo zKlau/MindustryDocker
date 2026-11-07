@@ -12,6 +12,7 @@ import {
   setupUploader,
 } from "../ui.js";
 import { store } from "../store.js";
+import * as onlineMaps from "./online-maps.js";
 
 let catalog = { maps: [], sectors: [] };
 let planetFilter = "";
@@ -120,6 +121,7 @@ function selectionInfo(entry) {
 }
 
 export async function load() {
+  onlineMaps.load();
   try {
     catalog = await get("/api/maps");
     renderMaps();
@@ -185,6 +187,7 @@ async function deleteSelected() {
 }
 
 export function init() {
+  onlineMaps.init(() => setTimeout(load, 800));
   $("#planetFilter").addEventListener("click", choosePlanet);
   $("#mapSearch").addEventListener("input", renderMaps);
   $("#mapGroups").addEventListener("click", selectCard);

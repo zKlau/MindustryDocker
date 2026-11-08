@@ -21,6 +21,28 @@ CORE_JS = """(function(){
   return {capacity: core.storageCapacity, items: items};
 })()"""
 
+POWER_JS = """(function(){
+  var graphs = {};
+  Vars.state.rules.defaultTeam.data().buildings.each(function(build){
+    if (build.power != null) { graphs[build.power.graph.getID()] = build.power.graph; }
+  });
+  var r = {networks: 0, short: 0, produced: 0, needed: 0, balance: 0, stored: 0, capacity: 0};
+  for (var id in graphs) {
+    var g = graphs[id];
+    if (g.producers.isEmpty() && g.consumers.isEmpty() && g.batteries.isEmpty()) { continue; }
+    r.networks++;
+    if (g.getLastPowerNeeded() > 0 && g.getSatisfaction() < 0.999) { r.short++; }
+    r.produced += g.getLastScaledPowerIn();
+    r.needed += g.getLastScaledPowerOut();
+    r.balance += g.getPowerBalance();
+    r.stored += g.getLastPowerStored();
+    r.capacity += g.getLastCapacity();
+  }
+  return r.networks > 0 ? r : null;
+})()"""
+
+PER_TICK_FIELDS = ("produced", "needed", "balance")
+
 _samples = collections.deque()
 _lock = threading.Lock()
 
@@ -54,3 +76,10 @@ def core_items(core, map_name, tick):
     items = [{**item, "rate": rates.get(item["name"])} for item in core["items"]]
 
     return {"capacity": core["capacity"], "items": items}
+
+
+def power_totals(power):
+    if power is None:
+        return None
+
+    return {**power, **{field: power[field] * TICKS_PER_SECOND for field in PER_TICK_FIELDS}}

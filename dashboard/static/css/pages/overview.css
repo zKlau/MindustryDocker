@@ -50,3 +50,15 @@
 .resource-rate.down {
   color: var(--bad);
 }
+
+.resource-amount.up {
+  color: var(--ok);
+}
+
+.resource-amount.down {
+  color: var(--bad);
+}
+
+.hint.warning {
+  color: var(--bad);
+}

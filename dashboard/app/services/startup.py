@@ -58,7 +58,7 @@ def _uses_env():
 
 
 def start_commands():
-    commands = [f"config port {settings.GAME_PORT}"]
+    commands = [f"config port {settings.CONTAINER_GAME_PORT}"]
     if settings.SERVER_NAME:
         commands.append(f"config name {settings.SERVER_NAME}")
     if _uses_env():

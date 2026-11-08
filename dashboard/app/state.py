@@ -1,4 +1,4 @@
-"""Small JSON store for dashboard-owned settings (rule overrides, startup behaviour)."""
+"""Small JSON store for dashboard-owned settings (rule overrides, startup, join protection)."""
 
 import copy
 import json
@@ -6,7 +6,7 @@ import threading
 
 from . import settings
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 DEFAULTS = {
     "rules": {},
@@ -15,6 +15,14 @@ DEFAULTS = {
     #   map     - host a specific map/sector with a mode
     #   env     - just run MINDUSTRY_START_COMMANDS
     "startup": {"mode": "resume", "kind": "map", "map": "", "gamemode": "survival"},
+    # Join protection, see services/access.py.
+    "access": {
+        "passwordEnabled": False,
+        "password": "",
+        "remembered": [],
+        "approved": [],
+        "requests": [],
+    },
 }
 
 
@@ -34,11 +42,21 @@ def load():
 
 
 def update(key, value):
-    data = load()
-    data[key] = value
     with _lock:
+        data = load()
+        data[key] = value
         settings.STATE_DIR.mkdir(parents=True, exist_ok=True)
         tmp = settings.STATE_FILE.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, indent=2))
+        tmp.chmod(0o600)  # contains the join password
         tmp.replace(settings.STATE_FILE)
     return data
+
+
+def modify(key, change):
+    """Read-modify-write one section safely: change(section) edits it in place."""
+    with _lock:
+        section = load()[key]
+        change(section)
+        update(key, section)
+        return section

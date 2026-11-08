@@ -2,6 +2,7 @@
 
 from ..server import server
 from ..services import (
+    access,
     game,
     maps,
     mods,
@@ -13,6 +14,7 @@ from ..services import (
     saves,
     server_config,
     startup,
+    stats,
 )
 from . import auth
 from .router import ApiError, Response, route
@@ -242,6 +244,64 @@ def unban(req):
 def set_admin(req):
     data = req.json()
     players.set_admin(data.get("id", ""), bool(data.get("on")))
+
+
+# ---------------------------------------------------------------- join protection
+
+
+@route("GET", "/api/access")
+def access_status(req):
+    return access.status()
+
+
+@route("POST", "/api/access/password")
+def set_join_password(req):
+    data = req.json()
+    access.set_password(bool(data.get("enabled")), data.get("password") or None)
+
+
+@route("POST", "/api/access/forget")
+def forget_logins(req):
+    access.forget_logins()
+
+
+@route("POST", "/api/access/whitelist")
+def set_whitelist(req):
+    access.set_whitelist(bool(req.json().get("enabled")))
+
+
+@route("POST", "/api/access/whitelist/approve")
+def approve_player(req):
+    data = req.json()
+    access.approve(data.get("id", ""), data.get("name", ""))
+
+
+@route("POST", "/api/access/whitelist/remove")
+def remove_player(req):
+    access.remove(req.json().get("id", ""))
+
+
+@route("POST", "/api/access/whitelist/dismiss")
+def dismiss_request(req):
+    access.dismiss(req.json().get("id", ""))
+
+
+# ---------------------------------------------------------------- stats
+
+
+@route("GET", "/api/stats")
+def leaderboard(req):
+    return stats.leaderboard()
+
+
+@route("POST", "/api/stats/remove")
+def remove_stats(req):
+    stats.remove(req.json().get("id", ""))
+
+
+@route("POST", "/api/stats/reset")
+def reset_stats(req):
+    stats.reset()
 
 
 # ---------------------------------------------------------------- settings

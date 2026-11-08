@@ -10,7 +10,7 @@ from http.server import ThreadingHTTPServer
 
 from . import settings
 from .server import log, server
-from .services import previews, startup
+from .services import access, previews, startup, stats
 
 
 def forward_stdin():
@@ -52,6 +52,11 @@ def main():
 
     server.on_ready.append(startup.on_server_ready)
     server.on_ready.append(previews.apply_block_colors)
+    server.on_ready.append(access.on_server_ready)
+    server.line_filters.append(access.filter_line)
+    server.on_ready.append(stats.on_server_ready)
+    server.line_filters.append(stats.filter_line)
+    threading.Thread(target=stats.run_collector, daemon=True).start()
     sys.exit(server.run_forever(startup.start_commands))
 
 

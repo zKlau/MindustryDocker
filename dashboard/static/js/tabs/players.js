@@ -1,6 +1,7 @@
 // Players: online list with kick/ban/admin, and the ban list.
 import { get, post } from "../api.js";
 import { $, cloneTemplate, emptyRow, fillText, render, run } from "../ui.js";
+import * as access from "./access.js";
 
 function createPlayerRow(player) {
   const row = cloneTemplate("playerRowTemplate");
@@ -47,7 +48,7 @@ async function loadBans() {
   render($("#banRows"), rows);
 }
 
-export async function load() {
+async function loadPlayers() {
   try {
     await Promise.all([loadOnline(), loadBans()]);
   } catch (error) {
@@ -55,7 +56,16 @@ export async function load() {
   }
 }
 
-export const poll = load;
+export function load() {
+  loadPlayers();
+  access.load();
+}
+
+/** Periodic refresh: lists only, so form controls being edited aren't overwritten. */
+export function poll() {
+  loadPlayers();
+  access.poll();
+}
 
 function runAction(action, row) {
   const id = row.dataset.id;
@@ -80,10 +90,12 @@ async function onClick(event) {
     return;
   }
   if (await runAction(button.dataset.action, button.closest("tr"))) {
-    setTimeout(load, 400);
+    setTimeout(loadPlayers, 400);
   }
 }
 
 export function init() {
-  $("#players").addEventListener("click", onClick);
+  access.init();
+  $("#playerRows").addEventListener("click", onClick);
+  $("#banRows").addEventListener("click", onClick);
 }

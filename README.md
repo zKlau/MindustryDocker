@@ -34,7 +34,8 @@ docker compose logs -f
 | Map      | Pick any custom-game map or campaign sector (Serpulo and Erekir) with previews, filter by planet, play it now or after the current game. Players stay connected. Browse, install and play community maps from MindustryTool. Upload and delete custom `.msav` maps |
 | Rules    | Presets (endless, manual waves, peaceful, chill, creative) and individual rules: win wave, wave timer and interval, infinite resources, fog, build/unit/damage multipliers. Applied live and kept for future maps                                                  |
 | Saves    | Save, load, download, upload and delete saved games                                                                                                                                                                                                                |
-| Players  | Online players with kick, ban and admin. Ban list with unban                                                                                                                                                                                                       |
+| Players  | Online players with kick, ban and admin. Ban list with unban. Join protection: a join password and/or a whitelist with approval requests                                                                                                                           |
+| Stats    | Leaderboard of playtime, sessions, blocks built and broken, waves survived and last seen, sortable and searchable. Players see their own stats in game with `/stats` and the top 5 with `/top`                                                                     |
 | Mods     | Installed mods/plugins with load status, upload and delete. Browse the official mod list (same as the in-game browser), filtered to versions your server supports, and install from GitHub in one click                                                            |
 | Settings | What happens on start (continue last game, a fixed map, or env commands), plus name, description, MOTD, player limit, autosave, pause when empty, vote-kick                                                                                                        |
 | Console  | Live server log and a command box for any server command                                                                                                                                                                                                           |
@@ -46,6 +47,21 @@ The planet is part of the map: each map or campaign sector belongs to Serpulo or
 ### Keeping your world
 
 On every shutdown, redeploy or "Restart server", the world is saved as `last-session`. With the default startup setting ("Continue the last game"), the server loads the newest of that save and the autosaves when it starts again, so a redeploy doesn't throw away your base. `MINDUSTRY_START_COMMANDS` is only used when there is no save yet, or when you choose that option in Settings.
+
+### Join protection
+
+Mindustry has no server password, so the Players tab offers two independent switches (use one, both or neither):
+
+- **Join password.** New players must type `/login <password>` in chat within 60 seconds of joining, or they are kicked. Until then they can't build, chat or interact. Each player logs in once and is remembered by their player ID. Admins and everyone online when you turn it on never need to log in. Changing the password makes everyone log in again. The password is never shown to other players or written to any log: `/login` lines are shown as `/login ****`, and Mindustry's command logging and log files are turned off while the password is on (the container log stays on). The game's connection isn't encrypted, so don't reuse an important password.
+- **Whitelist.** Mindustry's built-in whitelist: only approved players can join. When someone else tries, they appear under "Waiting for approval" with an Approve button. Everyone online is approved automatically when you turn it on.
+
+The join password is enforced by a small script the dashboard installs into the server on every start (through Mindustry's `js` command), so no plugin is needed. Settings, including the password, are stored in `/data/dashboard/state.json`.
+
+### Player stats
+
+A small script installed into the server on every start counts blocks built and broken and waves survived per player, and records joins. Once a minute the dashboard adds playtime for everyone online and saves everything to `/data/dashboard/stats.json`, so a crash loses at most a minute and stats survive redeploys. Counting starts when the dashboard is installed (the server keeps no history of its own). With the join password on, players only count once they've logged in.
+
+In game: `/stats` shows your own numbers, `/stats <name>` someone else's, and `/top` the top 5 by playtime (`/top built`, `/top broken`, `/top waves`, `/top sessions` for other categories).
 
 ### Online maps and mods
 
@@ -71,7 +87,7 @@ dashboard/
     validation.py         input checks for anything sent to the console
     http_client.py        outgoing requests (MindustryTool, GitHub) with size limits
     data/                 block_colors.json (map colours for previews)
-    services/             one module per feature: game, maps, previews, online_maps, online_mods,
+    services/             one module per feature: access, game, maps, previews, online_maps, online_mods, stats,
                           rules, saves, players, mods, server_config, startup
     web/                  HTTP layer: auth, router, routes (API endpoints), handler
   static/                 frontend (plain ES modules, no build step)

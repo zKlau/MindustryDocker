@@ -37,6 +37,8 @@ class MindustryServer:
         self.ready = threading.Event()
         self.stopping = False
         self.on_ready = []  # callbacks run (in a thread) each time the server finishes loading
+        # Callables run on every output line: return the (possibly edited) line, or None to hide it.
+        self.line_filters = []
 
     # ------------------------------------------------------------ lifecycle
 
@@ -106,6 +108,9 @@ class MindustryServer:
                 if q:
                     q.put(marker.group(2))
                 continue
+            line = self._apply_filters(line)
+            if line is None:
+                continue
             print(line, flush=True)
             with self._log_lock:
                 self.seq += 1
@@ -114,6 +119,13 @@ class MindustryServer:
                 self.ready.set()
                 for callback in self.on_ready:
                     threading.Thread(target=callback, daemon=True).start()
+
+    def _apply_filters(self, line):
+        for line_filter in self.line_filters:
+            line = line_filter(line)
+            if line is None:
+                return None
+        return line
 
     def logs_since(self, since):
         with self._log_lock:

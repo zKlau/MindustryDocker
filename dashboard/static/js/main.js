@@ -6,11 +6,12 @@ import * as map from "./tabs/map.js";
 import * as rules from "./tabs/rules.js";
 import * as saves from "./tabs/saves.js";
 import * as players from "./tabs/players.js";
+import * as stats from "./tabs/stats.js";
 import * as mods from "./tabs/mods.js";
 import * as settings from "./tabs/settings.js";
 import * as consoleTab from "./tabs/console.js";
 
-const TABS = { overview, map, rules, saves, players, mods, settings, console: consoleTab };
+const TABS = { overview, map, rules, saves, players, stats, mods, settings, console: consoleTab };
 const DEFAULT_TAB = "overview";
 
 let started = false;

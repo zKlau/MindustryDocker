@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="/css/pages/map.css" />
     <link rel="stylesheet" href="/css/pages/console.css" />
     <link rel="stylesheet" href="/css/pages/online.css" />
+    <link rel="stylesheet" href="/css/pages/access.css" />
+    <link rel="stylesheet" href="/css/pages/stats.css" />
     <script type="module" src="/js/main.js"></script>
   </head>
   <body>
@@ -41,6 +43,7 @@
         <button data-tab="rules">Rules</button>
         <button data-tab="saves">Saves</button>
         <button data-tab="players">Players</button>
+        <button data-tab="stats">Stats</button>
         <button data-tab="mods">Mods</button>
         <button data-tab="settings">Settings</button>
         <button data-tab="console">Console</button>
@@ -224,6 +227,73 @@
         <!-- Players -->
         <section id="players" class="tab-panel">
           <div class="card">
+            <h2>Join password</h2>
+            <p class="hint">
+              New players must type
+              <code>/login &lt;password&gt;</code>
+              in chat within
+              <span id="loginTimeout">60</span>
+              seconds or they are kicked. Until then they can't build or chat. Each player only logs in once;
+              admins never need to. Other players never see the password.
+            </p>
+            <form id="passwordForm">
+              <label class="checkbox">
+                <input type="checkbox" id="passwordEnabled" />
+                Require a password to play
+              </label>
+              <div class="row end">
+                <input
+                  type="password"
+                  id="joinPassword"
+                  class="grow"
+                  maxlength="64"
+                  autocomplete="new-password"
+                  placeholder="New password (leave empty to keep the current one)"
+                />
+                <button class="btn primary">Save</button>
+              </div>
+            </form>
+            <div class="row end">
+              <span class="hint access-remembered" id="rememberedInfo"></span>
+              <span class="spacer"></span>
+              <button class="btn small danger" id="forgetLoginsButton">Forget all logins</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Whitelist</h2>
+            <p class="hint">
+              Only approved players can join. When someone else tries, they show up below so you can approve
+              them. Everyone online is approved automatically when you turn this on.
+            </p>
+            <label class="checkbox">
+              <input type="checkbox" id="whitelistEnabled" />
+              Only approved players can join
+            </label>
+            <h3 class="subheading">Waiting for approval</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Player ID</th>
+                  <th>Tried to join</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="requestRows"></tbody>
+            </table>
+            <h3 class="subheading">Approved players</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Player ID</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="approvedRows"></tbody>
+            </table>
+          </div>
+          <div class="card">
             <h2>Online players</h2>
             <table>
               <thead>
@@ -249,6 +319,47 @@
               </thead>
               <tbody id="banRows"></tbody>
             </table>
+          </div>
+        </section>
+
+        <!-- Stats -->
+        <section id="stats" class="tab-panel">
+          <div class="card">
+            <h2>Leaderboard</h2>
+            <p class="hint">
+              Counted since the dashboard was installed. Players can see their numbers in game with
+              <code>/stats</code>
+              and the top 5 with
+              <code>/top</code>
+              (or
+              <code>/top built</code>
+              ,
+              <code>/top waves</code>
+              , and more). Click a column to sort.
+            </p>
+            <input type="text" id="statsSearch" class="stats-search" placeholder="Search players" />
+            <div class="table-scroll">
+              <table class="stats-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th><button class="sort-button" data-sort="name">Player</button></th>
+                    <th><button class="sort-button active" data-sort="playtime">Playtime</button></th>
+                    <th><button class="sort-button" data-sort="sessions">Sessions</button></th>
+                    <th><button class="sort-button" data-sort="built">Built</button></th>
+                    <th><button class="sort-button" data-sort="broken">Broken</button></th>
+                    <th><button class="sort-button" data-sort="waves">Waves</button></th>
+                    <th><button class="sort-button" data-sort="lastSeen">Last seen</button></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="statsRows"></tbody>
+              </table>
+            </div>
+            <div class="row end">
+              <span class="spacer"></span>
+              <button class="btn small danger" id="resetStatsButton">Reset all stats</button>
+            </div>
           </div>
         </section>
 
@@ -454,6 +565,43 @@
         <td class="online-mod-stars"></td>
         <td class="online-mod-version"></td>
         <td class="actions"><button class="btn small" data-action="install">Install</button></td>
+      </tr>
+    </template>
+
+    <template id="requestRowTemplate">
+      <tr>
+        <td class="request-name"></td>
+        <td class="request-id"></td>
+        <td class="request-time"></td>
+        <td class="actions">
+          <button class="btn small primary" data-action="approve">Approve</button>
+          <button class="btn small" data-action="dismiss">Dismiss</button>
+        </td>
+      </tr>
+    </template>
+
+    <template id="approvedRowTemplate">
+      <tr>
+        <td class="approved-name"></td>
+        <td class="approved-id"></td>
+        <td class="actions"><button class="btn small danger" data-action="remove">Remove</button></td>
+      </tr>
+    </template>
+
+    <template id="statsRowTemplate">
+      <tr>
+        <td class="stats-rank"></td>
+        <td>
+          <span class="stats-name"></span>
+          <span class="badge stats-online" hidden>online</span>
+        </td>
+        <td class="stats-playtime"></td>
+        <td class="stats-sessions"></td>
+        <td class="stats-built"></td>
+        <td class="stats-broken"></td>
+        <td class="stats-waves"></td>
+        <td class="stats-last-seen"></td>
+        <td class="actions"><button class="btn small" data-action="remove">Remove</button></td>
       </tr>
     </template>
 

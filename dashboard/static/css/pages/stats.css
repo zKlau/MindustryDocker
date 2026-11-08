@@ -1,0 +1,50 @@
+/* Stats tab: sortable leaderboard. */
+
+.stats-search {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 10px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.stats-table td,
+.stats-table th {
+  white-space: nowrap;
+}
+
+.stats-rank {
+  width: 36px;
+  color: var(--muted);
+}
+
+.stats-name {
+  font-weight: 600;
+}
+
+.sort-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sort-button:hover {
+  color: var(--text);
+}
+
+.sort-button.active {
+  color: var(--accent);
+}
+
+.sort-button.active::after {
+  content: " ▾";
+}
+
+.sort-button.active.ascending::after {
+  content: " ▴";
+}

@@ -82,29 +82,46 @@ dashboard/
   app/                    Python backend (standard library only), run with `python -m app`
     __main__.py           entry point: starts the web server and supervises Mindustry
     settings.py           environment variables and paths
-    state.py              dashboard-owned settings (rule overrides, startup behaviour)
-    server.py             Mindustry process: console input, log buffer, JS queries
-    validation.py         input checks for anything sent to the console
-    http_client.py        outgoing requests (MindustryTool, GitHub) with size limits
+    state.py              dashboard-owned settings (rule overrides, startup behaviour, join protection)
+    common/               shared by the whole backend: constants, validation, text and file helpers,
+                          JS snippet builder, logging, background threads, outgoing HTTP client
+    server/               Mindustry process: console input, log buffer, JS queries
     data/                 block_colors.json (map colours for previews)
-    services/             one module per feature: access, game, maps, previews, online_maps, online_mods, stats,
-                          rules, saves, players, mods, server_config, startup
-    web/                  HTTP layer: auth, router, routes (API endpoints), handler
+    services/             one module or package per feature:
+      game, players, rules, saves, server_config, startup
+      access/             join password and whitelist (scripts, hooks, password, whitelist, status)
+      maps/               catalog, hosting, files, previews, online (MindustryTool)
+      mods/               installed files, catalog (official mod list), GitHub downloads, online
+      stats/              store, collector, in-game chat commands, messages, leaderboard
+    web/                  HTTP layer: auth, router, handler, static files, cookies, responses
+      routes/             API endpoints, one module per dashboard area
   static/                 frontend (plain ES modules, no build step)
     index.html            page layout plus <template> elements for repeated pieces
     css/                  base, layout, components/*, pages/*
-    js/main.js            app shell: login, tabs, polling
-    js/api.js, ui.js, store.js
-    js/tabs/*.js          one module per tab
+    js/main.js            wires the app shell together
+    js/shell/             login/session, tab navigation, polling
+    js/api/               fetch client and every API endpoint path
+    js/constants/         shared timings
+    js/ui/                DOM helpers, tables, toasts, form fields, badges, uploader
+    js/utils/             formatting, safe localStorage, paged search
+    js/tabs/              one module per tab; tabs with several parts are folders (map, mods, players,
+                          rules, settings)
 tools/
   extract_block_colors.py regenerates dashboard/app/data/block_colors.json
+  check_return_padding.py lint rule: an empty line before `return` (Python side of the ESLint rule)
 ```
 
 The backend reads structured data from the server by evaluating JavaScript with Mindustry's `js` console command, so no server plugin is needed.
 
 ### Map previews
 
-The headless server doesn't load textures, so every block's map colour is black. The dashboard sets real colours from `dashboard/app/data/block_colors.json` on each server start, then renders previews with the game's own `MapIO` and caches them in `/data/dashboard/previews`. After a Mindustry update adds new terrain blocks, regenerate the colours with the commands at the top of `tools/extract_block_colors.py`.
+The headless server doesn't load textures, so every block's map colour is black. The dashboard sets real colours from `dashboard/app/data/block_colors.json` on each server start, then renders previews with the game's own `MapIO` and caches them in `/data/dashboard/previews`. After a Mindustry update adds new terrain blocks, regenerate the colours from the game's raw environment sprites (standard library only):
+
+```bash
+git clone --depth 1 --filter=blob:none --sparse --branch v160.7 https://github.com/Anuken/Mindustry.git mindustry-src
+git -C mindustry-src sparse-checkout set core/assets-raw/sprites/blocks/environment
+python tools/extract_block_colors.py mindustry-src/core/assets-raw/sprites/blocks/environment
+```
 
 ## Development
 
@@ -123,9 +140,11 @@ npm run lint:fix   # auto-fix what can be fixed
 
 Style rules worth knowing:
 
-- JavaScript: no ternaries or one-line `if`s (`curly`, `no-ternary`, `no-unused-expressions`), small functions (complexity and length warnings). HTML for repeated pieces lives in `<template>` elements, not in JS strings.
+- JavaScript: no ternaries or one-line `if`s (`curly`, `no-ternary`, `no-unused-expressions`), small functions (complexity and length warnings), an empty line before every `return` that follows other statements. HTML for repeated pieces lives in `<template>` elements, not in JS strings.
 - CSS: one file per component or page, one declaration per line (Stylelint standard config).
-- Python: Ruff with pycodestyle, pyflakes, import sorting, bugbear, naming, simplify, pathlib and a complexity limit of 10. Inline `x if c else y` is avoided on purpose.
+- Python: Ruff with pycodestyle, pyflakes, import sorting, bugbear, naming, simplify, pathlib and a complexity limit of 10. Inline `x if c else y` is avoided on purpose. `tools/check_return_padding.py` enforces the same empty-line-before-`return` rule as ESLint (`python tools/check_return_padding.py --fix dashboard tools`, or `npm run lint:fix`, inserts them).
+- No comments or docstrings in code: names, small functions and named constants carry the meaning instead.
+- Structure: constants and helpers used in one place live next to it (e.g. `services/stats/constants.py`); ones shared more widely go in the nearest common folder (`app/common/`, `js/ui/`, `js/utils/`). A module does one thing; a feature with several parts becomes a folder named after it.
 
 To run the dashboard without Docker (needs Java 17+ and the server jar):
 

@@ -1,9 +1,15 @@
-// Console: live server log and a command box with history.
-import { get, post } from "../api.js";
-import { $, cloneTemplate, run } from "../ui.js";
+import { get, post } from "../api/client.js";
+import { API, withQuery } from "../api/endpoints.js";
+import { QUICK_REFRESH_MS } from "../constants/timing.js";
+import { $, cloneTemplate } from "../ui/dom.js";
+import { run } from "../ui/toast.js";
 
 const MAX_LINES = 2000;
 const STICKY_DISTANCE = 60;
+const LEVEL_CLASSES = [
+  ["[E]", "error"],
+  ["[W]", "warn"],
+];
 
 const history = [];
 let historyIndex = 0;
@@ -16,11 +22,11 @@ function isNearBottom(element) {
 function createLine(text) {
   const line = cloneTemplate("logLineTemplate");
   line.textContent = text;
-  if (text.includes("[E]")) {
-    line.classList.add("error");
-  } else if (text.includes("[W]")) {
-    line.classList.add("warn");
+  const level = LEVEL_CLASSES.find(([tag]) => text.includes(tag));
+  if (level) {
+    line.classList.add(level[1]);
   }
+
   return line;
 }
 
@@ -36,22 +42,26 @@ function appendLines(lines) {
   }
 }
 
+function clearLog() {
+  $("#log").replaceChildren();
+  lastSeq = 0;
+}
+
 export async function tail() {
-  try {
-    const { lines, last } = await get(`/api/logs?since=${lastSeq}`);
-    if (last < lastSeq) {
-      // the dashboard restarted and its log buffer starts over
-      $("#log").replaceChildren();
-      lastSeq = 0;
-      return;
-    }
-    if (lines.length > 0) {
-      appendLines(lines);
-    }
-    lastSeq = last;
-  } catch {
-    // the status pill already shows connection problems
+  const result = await get(withQuery(API.logs, { since: lastSeq })).catch(() => null);
+  if (!result) {
+    return;
   }
+  const dashboardRestarted = result.last < lastSeq;
+  if (dashboardRestarted) {
+    clearLog();
+
+    return;
+  }
+  if (result.lines.length > 0) {
+    appendLines(result.lines);
+  }
+  lastSeq = result.last;
 }
 
 export function load() {
@@ -70,8 +80,8 @@ async function sendCommand(event) {
   history.push(command);
   historyIndex = history.length;
   input.value = "";
-  if (await run(post("/api/console", { command }), null)) {
-    setTimeout(tail, 300);
+  if (await run(post(API.console, { command }), null)) {
+    setTimeout(tail, QUICK_REFRESH_MS);
   }
 }
 

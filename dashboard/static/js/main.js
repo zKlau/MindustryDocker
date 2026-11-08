@@ -1,146 +1,45 @@
-// App shell: login, tab switching and polling.
-import { get, post } from "./api.js";
-import { $, $$, toast } from "./ui.js";
-import * as overview from "./tabs/overview.js";
-import * as map from "./tabs/map.js";
-import * as rules from "./tabs/rules.js";
-import * as saves from "./tabs/saves.js";
-import * as players from "./tabs/players.js";
-import * as stats from "./tabs/stats.js";
-import * as mods from "./tabs/mods.js";
-import * as settings from "./tabs/settings.js";
+import { get } from "./api/client.js";
+import { API } from "./api/endpoints.js";
+import { LOG_POLL_MS, STATUS_POLL_MS, TAB_POLL_MS } from "./constants/timing.js";
+import { every } from "./shell/polling.js";
+import { startSession } from "./shell/session.js";
+import { activeTab, setupTabs, startTabs } from "./shell/tabs.js";
 import * as consoleTab from "./tabs/console.js";
+import * as map from "./tabs/map/index.js";
+import * as mods from "./tabs/mods/index.js";
+import * as overview from "./tabs/overview.js";
+import * as players from "./tabs/players/index.js";
+import * as rules from "./tabs/rules/index.js";
+import * as saves from "./tabs/saves.js";
+import * as settings from "./tabs/settings/index.js";
+import * as stats from "./tabs/stats.js";
+import { $ } from "./ui/dom.js";
 
 const TABS = { overview, map, rules, saves, players, stats, mods, settings, console: consoleTab };
 const DEFAULT_TAB = "overview";
 
-let started = false;
-let loggedIn = false;
-
-/** setInterval that pauses while logged out or while the browser tab is hidden. */
-function every(milliseconds, callback) {
-  setInterval(() => {
-    if (loggedIn && !document.hidden) {
-      callback();
-    }
-  }, milliseconds);
-}
-
-function activeTab() {
-  return $("#tabs .active").dataset.tab;
-}
-
-function rememberTab(name) {
-  try {
-    localStorage.setItem("tab", name);
-  } catch {
-    // storage can be unavailable (private mode); remembering the tab is optional
-  }
-}
-
-function savedTab() {
-  try {
-    const name = localStorage.getItem("tab");
-    if (name in TABS) {
-      return name;
-    }
-  } catch {
-    // ignore, fall back to the default tab
-  }
-  return DEFAULT_TAB;
-}
-
-function showTab(name) {
-  for (const button of $$("#tabs button")) {
-    button.classList.toggle("active", button.dataset.tab === name);
-  }
-  for (const panel of $$(".tab-panel")) {
-    panel.classList.toggle("active", panel.id === name);
-  }
-  TABS[name].load?.();
-  rememberTab(name);
-}
-
-function showLogin() {
-  loggedIn = false;
-  $("#app").hidden = true;
-  $("#login").hidden = false;
-  $("#password").focus();
-}
-
-async function showServerName() {
-  try {
-    const { values } = await get("/api/config");
-    if (values.name) {
-      $("#title").textContent = values.name;
-      document.title = `${values.name} · Admin`;
-    }
-  } catch {
-    // keep the default title
-  }
-}
-
 function startPolling() {
   overview.load();
   consoleTab.tail();
-  every(5000, () => overview.load());
-  every(1500, () => consoleTab.tail());
-  every(5000, () => TABS[activeTab()].poll?.());
+  every(STATUS_POLL_MS, () => overview.load());
+  every(LOG_POLL_MS, () => consoleTab.tail());
+  every(TAB_POLL_MS, () => activeTab().poll?.());
 }
 
-function showApp() {
-  loggedIn = true;
-  $("#login").hidden = true;
-  $("#app").hidden = false;
-  if (started) {
-    return;
+async function showServerName() {
+  const config = await get(API.config).catch(() => ({ values: {} }));
+  const name = config.values.name;
+  if (name) {
+    $("#title").textContent = name;
+    document.title = `${name} · Admin`;
   }
-  started = true;
-  for (const tab of Object.values(TABS)) {
-    tab.init?.();
-  }
-  showTab(savedTab());
+}
+
+function startApp() {
+  startTabs();
   startPolling();
   showServerName();
 }
 
-async function login(event) {
-  event.preventDefault();
-  try {
-    await post("/api/login", { password: $("#password").value });
-    $("#password").value = "";
-    showApp();
-  } catch (error) {
-    toast(error.message, true);
-  }
-}
-
-async function logout() {
-  await post("/api/logout").catch(() => {});
-  location.reload();
-}
-
-async function checkSession() {
-  try {
-    const session = await get("/api/session");
-    if (session.authed) {
-      showApp();
-      return;
-    }
-  } catch {
-    // fall through to the login screen
-  }
-  showLogin();
-}
-
-$("#tabs").addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-tab]");
-  if (button) {
-    showTab(button.dataset.tab);
-  }
-});
-$("#loginForm").addEventListener("submit", login);
-$("#logoutButton").addEventListener("click", logout);
-window.addEventListener("logged-out", showLogin);
-
-checkSession();
+setupTabs(TABS, DEFAULT_TAB);
+startSession(startApp);

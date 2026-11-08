@@ -1,5 +1,3 @@
-"""Password login with in-memory sessions and simple brute-force protection."""
-
 import collections
 import hmac
 import secrets
@@ -12,6 +10,7 @@ SESSION_TTL = 7 * 24 * 3600
 MAX_FAILURES = 5
 LOCKOUT_SECONDS = 600
 COOKIE = "mdash"
+FAILED_LOGIN_DELAY_SECONDS = 1
 
 _sessions = {}
 _failures = collections.defaultdict(list)
@@ -27,7 +26,6 @@ def enabled():
 
 
 def login(password, client_ip):
-    """Return a new session token, or None if the password is wrong."""
     now = time.time()
     with _lock:
         _failures[client_ip] = [t for t in _failures[client_ip] if now - t < LOCKOUT_SECONDS]
@@ -38,10 +36,12 @@ def login(password, client_ip):
             _failures.pop(client_ip, None)
             token = secrets.token_urlsafe(32)
             _sessions[token] = now + SESSION_TTL
+
         return token
     with _lock:
         _failures[client_ip].append(now)
-    time.sleep(1)  # slow down guessing
+    time.sleep(FAILED_LOGIN_DELAY_SECONDS)
+
     return None
 
 
@@ -56,4 +56,5 @@ def valid(token):
         if expires and expires > time.time():
             return True
         _sessions.pop(token or "", None)
+
         return False

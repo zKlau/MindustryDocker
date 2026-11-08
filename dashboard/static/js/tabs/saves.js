@@ -1,34 +1,30 @@
-// Saves: save, load, download, upload and delete saved games.
-import { get, post, upload } from "../api.js";
-import { $, cloneTemplate, emptyRow, fillText, formatBytes, render, run, setupUploader } from "../ui.js";
+import { get, post, upload } from "../api/client.js";
+import { API, saveDownloadUrl } from "../api/endpoints.js";
+import { SLOW_REFRESH_MS } from "../constants/timing.js";
+import { $, cloneTemplate, fillText, onAction } from "../ui/dom.js";
+import { loadRows } from "../ui/table.js";
+import { run } from "../ui/toast.js";
+import { setupUploader } from "../ui/uploader.js";
+import { formatBytes, formatDate } from "../utils/format.js";
 
-const COLUMNS = 4;
+const TABLE = { columns: 4, emptyText: "No saves yet." };
 
 function createRow(save) {
   const row = cloneTemplate("saveRowTemplate");
   row.dataset.name = save.name;
   fillText(row, {
     ".save-name": save.name,
-    ".save-date": new Date(save.mtime * 1000).toLocaleString(),
+    ".save-date": formatDate(save.mtime),
     ".save-size": formatBytes(save.size),
   });
   row.querySelector(".save-auto").hidden = !save.auto;
-  row.querySelector(".save-download").href = `/api/saves/download?name=${encodeURIComponent(save.name)}`;
+  row.querySelector(".save-download").href = saveDownloadUrl(save.name);
+
   return row;
 }
 
-export async function load() {
-  const body = $("#saveRows");
-  try {
-    const saves = await get("/api/saves");
-    if (saves.length === 0) {
-      render(body, [emptyRow(COLUMNS, "No saves yet.")]);
-      return;
-    }
-    render(body, saves.map(createRow));
-  } catch (error) {
-    render(body, [emptyRow(COLUMNS, error.message)]);
-  }
+export function load() {
+  return loadRows($("#saveRows"), () => get(API.saves.list), createRow, TABLE);
 }
 
 async function saveGame(event) {
@@ -37,14 +33,14 @@ async function saveGame(event) {
   if (!name) {
     return;
   }
-  if (await run(post("/api/saves/save", { name }), "Saved")) {
-    setTimeout(load, 800);
+  if (await run(post(API.saves.save, { name }), "Saved")) {
+    setTimeout(load, SLOW_REFRESH_MS);
   }
 }
 
 async function loadSave(name) {
   if (confirm(`Load "${name}"? The current game is replaced.`)) {
-    await run(post("/api/saves/load", { name }), "Loading save…");
+    await run(post(API.saves.load, { name }), "Loading save…");
   }
 }
 
@@ -52,26 +48,15 @@ async function deleteSave(name) {
   if (!confirm(`Delete "${name}" permanently?`)) {
     return;
   }
-  if (await run(post("/api/saves/delete", { name }), "Deleted")) {
+  if (await run(post(API.saves.delete, { name }), "Deleted")) {
     load();
   }
 }
 
-function onRowClick(event) {
-  const button = event.target.closest("button[data-action]");
-  if (!button) {
-    return;
-  }
-  const name = button.closest("tr").dataset.name;
-  if (button.dataset.action === "load") {
-    loadSave(name);
-  } else if (button.dataset.action === "delete") {
-    deleteSave(name);
-  }
-}
+const ROW_ACTIONS = { load: loadSave, delete: deleteSave };
 
 export function init() {
   $("#saveForm").addEventListener("submit", saveGame);
-  $("#saveRows").addEventListener("click", onRowClick);
-  setupUploader($("#saveFile"), $("#uploadSaveButton"), (file) => upload("/api/saves/upload", file), load);
+  onAction($("#saveRows"), (action, button) => ROW_ACTIONS[action]?.(button.closest("tr").dataset.name));
+  setupUploader($("#saveFile"), $("#uploadSaveButton"), (file) => upload(API.saves.upload, file), load);
 }

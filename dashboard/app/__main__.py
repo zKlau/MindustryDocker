@@ -1,20 +1,21 @@
-"""Entry point: `python -m app`.
-
-Starts the web dashboard (if ADMIN_PASSWORD is set) and supervises the Mindustry server.
-"""
-
 import signal
 import sys
-import threading
 from http.server import ThreadingHTTPServer
 
 from . import settings
-from .server import log, server
-from .services import access, previews, startup, stats
+from .common.log import log
+from .common.threads import run_in_background
+from .server import server
+from .services import startup
+from .services.access import hooks as access_hooks
+from .services.maps import previews
+from .services.stats import chat as stats_chat
+from .services.stats import collector as stats_collector
+
+LISTEN_ADDRESS = "0.0.0.0"
 
 
 def forward_stdin():
-    """Keep `docker attach` working: lines typed into the container go to the server console."""
     try:
         for line in sys.stdin:
             server.send(line)
@@ -25,10 +26,22 @@ def forward_stdin():
 def start_dashboard():
     from .web.handler import Handler
 
-    httpd = ThreadingHTTPServer(("0.0.0.0", settings.HTTP_PORT), Handler)
+    httpd = ThreadingHTTPServer((LISTEN_ADDRESS, settings.HTTP_PORT), Handler)
     httpd.daemon_threads = True
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    run_in_background(httpd.serve_forever)
     log(f"web dashboard listening on port {settings.HTTP_PORT}")
+
+
+def register_hooks():
+    server.on_ready.extend(
+        [
+            startup.on_server_ready,
+            previews.apply_block_colors,
+            access_hooks.on_server_ready,
+            stats_collector.on_server_ready,
+        ]
+    )
+    server.line_filters.extend([access_hooks.filter_line, stats_chat.filter_line])
 
 
 def main():
@@ -43,20 +56,15 @@ def main():
     signal.signal(signal.SIGINT, stop)
 
     if sys.stdin and not sys.stdin.closed:
-        threading.Thread(target=forward_stdin, daemon=True).start()
+        run_in_background(forward_stdin)
 
     if settings.ADMIN_PASSWORD:
         start_dashboard()
     else:
         log("ADMIN_PASSWORD is not set - web dashboard disabled")
 
-    server.on_ready.append(startup.on_server_ready)
-    server.on_ready.append(previews.apply_block_colors)
-    server.on_ready.append(access.on_server_ready)
-    server.line_filters.append(access.filter_line)
-    server.on_ready.append(stats.on_server_ready)
-    server.line_filters.append(stats.filter_line)
-    threading.Thread(target=stats.run_collector, daemon=True).start()
+    register_hooks()
+    run_in_background(stats_collector.run_collector)
     sys.exit(server.run_forever(startup.start_commands))
 
 

@@ -11,14 +11,13 @@ export default [
       globals: globals.browser,
     },
     rules: {
-      // Readability: explicit if/else blocks instead of inline conditionals.
       curly: ["error", "all"],
       "no-ternary": "error",
       "no-nested-ternary": "error",
       "no-unused-expressions": ["error", { allowShortCircuit: false, allowTernary: false }],
       "no-else-return": "error",
+      "padding-line-between-statements": ["error", { blankLine: "always", prev: "*", next: "return" }],
 
-      // Correctness and consistency.
       eqeqeq: ["error", "always"],
       "no-var": "error",
       "prefer-const": "error",
@@ -27,7 +26,6 @@ export default [
       "no-param-reassign": "error",
       "no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrors: "none" }],
 
-      // Keep functions small and easy to follow.
       complexity: ["warn", 8],
       "max-depth": ["warn", 3],
       "max-lines-per-function": ["warn", { max: 50, skipBlankLines: true, skipComments: true }],

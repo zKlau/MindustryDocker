@@ -1,10 +1,12 @@
-"""Live game state and quick actions."""
-
-import threading
-
 from .. import settings
+from ..common.constants import TICKS_PER_SECOND
+from ..common.js import fill, literal
+from ..common.text import on_off
+from ..common.threads import run_in_background
+from ..common.validation import text
 from ..server import server
-from ..validation import js_string
+
+MAX_MESSAGE_LENGTH = 200
 
 STATUS_JS = """(function(){
   var s = Vars.state;
@@ -17,7 +19,7 @@ STATUS_JS = """(function(){
     r.map = s.map.plainName();
     r.planet = s.rules.planet.name;
     r.wave = s.wave;
-    r.nextWave = Math.round(s.wavetime / 60);
+    r.nextWave = Math.round(s.wavetime / TICKS);
     r.waveTimer = s.rules.waveTimer && s.rules.waves;
     r.paused = s.isPaused();
     r.enemies = s.enemies;
@@ -25,7 +27,7 @@ STATUS_JS = """(function(){
     r.mode = s.rules.mode().name();
     r.fps = Core.graphics.getFramesPerSecond();
     r.winWave = s.rules.winWave;
-    r.minutes = Math.floor(s.tick / 3600);
+    r.minutes = Math.floor(s.tick / (TICKS * 60));
   }
   return r;
 })()"""
@@ -34,14 +36,11 @@ SAY_JS = "(function(){ Call.sendMessage('[scarlet][[Admin][] ' + MESSAGE); retur
 
 
 def status():
-    return {"running": server.alive(), **server.query(STATUS_JS)}
+    return {"running": server.alive(), **server.query(fill(STATUS_JS, TICKS=TICKS_PER_SECOND))}
 
 
 def pause(on):
-    if on:
-        server.send("pause on")
-    else:
-        server.send("pause off")
+    server.send(f"pause {on_off(on)}")
 
 
 def next_wave():
@@ -57,13 +56,11 @@ def fill_core():
 
 
 def say(message):
-    message = str(message).strip()[:200]
+    message = text(message, MAX_MESSAGE_LENGTH)
     if not message:
         raise ValueError("Message is empty")
-    server.query(SAY_JS.replace("MESSAGE", js_string(message)))
+    server.query(fill(SAY_JS, MESSAGE=literal(message)))
 
 
 def restart():
-    """Save the world, then exit; the supervisor starts the server again and resumes the save."""
-    worker = threading.Thread(target=server.exit, kwargs={"save_name": settings.SESSION_SAVE}, daemon=True)
-    worker.start()
+    run_in_background(server.exit, save_name=settings.SESSION_SAVE)

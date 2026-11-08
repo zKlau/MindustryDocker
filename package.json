@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "format": "prettier --write \"dashboard/static/**/*.{js,css,html}\" \"*.{json,md,yml}\" && ruff format dashboard tools",
-    "lint": "eslint dashboard/static && stylelint \"dashboard/static/**/*.css\" && prettier --check \"dashboard/static/**/*.{js,css,html}\" && ruff check dashboard tools && ruff format --check dashboard tools",
-    "lint:fix": "eslint --fix dashboard/static && stylelint --fix \"dashboard/static/**/*.css\" && ruff check --fix dashboard tools"
+    "lint": "eslint dashboard/static && stylelint \"dashboard/static/**/*.css\" && prettier --check \"dashboard/static/**/*.{js,css,html}\" && ruff check dashboard tools && ruff format --check dashboard tools && python tools/check_return_padding.py dashboard tools",
+    "lint:fix": "eslint --fix dashboard/static && stylelint --fix \"dashboard/static/**/*.css\" && ruff check --fix dashboard tools && python tools/check_return_padding.py --fix dashboard tools"
   },
   "devDependencies": {
     "@eslint/js": "9.17.0",

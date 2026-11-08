@@ -1,13 +1,17 @@
-// Overview: live status tiles and quick actions.
-import { get, post } from "../api.js";
-import { $, capitalize, cloneTemplate, fillText, render, run } from "../ui.js";
+import { get, post } from "../api/client.js";
+import { API } from "../api/endpoints.js";
+import { REFRESH_MS } from "../constants/timing.js";
 import { store } from "../store.js";
+import { setBadge } from "../ui/badges.js";
+import { $, cloneTemplate, fillText, render } from "../ui/dom.js";
+import { run } from "../ui/toast.js";
+import { capitalize, formatDuration } from "../utils/format.js";
 
 function pillState(status) {
-  if (!status.running || status.error) {
-    if (status.error) {
-      return { text: "Starting…", className: "bad" };
-    }
+  if (status.error) {
+    return { text: "Starting…", className: "bad" };
+  }
+  if (!status.running) {
     return { text: "Offline", className: "bad" };
   }
   if (!status.hosting) {
@@ -16,20 +20,20 @@ function pillState(status) {
   if (status.paused) {
     return { text: "Paused", className: "" };
   }
+
   return { text: "Online", className: "ok" };
 }
 
 function renderPill(status) {
   const { text, className } = pillState(status);
-  const pill = $("#statePill");
-  pill.textContent = text;
-  pill.className = `pill ${className}`;
+  setBadge($("#statePill"), text, `pill ${className}`);
 }
 
 function waveText(status) {
   if (status.winWave > 0) {
     return `${status.wave} / ${status.winWave}`;
   }
+
   return String(status.wave);
 }
 
@@ -37,11 +41,13 @@ function nextWaveText(status) {
   if (status.waveTimer) {
     return `${status.nextWave}s`;
   }
+
   return "Manual";
 }
 
 function playerText(status) {
   const limit = status.playerLimit || "∞";
+
   return `${status.players} / ${limit}`;
 }
 
@@ -49,6 +55,7 @@ function tileValues(status) {
   if (!status.hosting) {
     return [["Status", status.error || "No game running. Pick a map on the Map tab."]];
   }
+
   return [
     ["Map", status.map],
     ["Planet", capitalize(status.planet)],
@@ -57,52 +64,54 @@ function tileValues(status) {
     ["Next wave", nextWaveText(status)],
     ["Players", playerText(status)],
     ["Enemies", status.enemies],
-    ["Played", `${Math.floor(status.minutes / 60)}h ${status.minutes % 60}m`],
+    ["Played", formatDuration(status.minutes * 60)],
     ["Server FPS", status.fps],
     ["Memory", `${status.heapMB} MB`],
   ];
 }
 
-function renderTiles(status) {
-  const tiles = tileValues(status).map(([label, value]) => {
-    const tile = cloneTemplate("tileTemplate");
-    fillText(tile, { ".tile-label": label, ".tile-value": value });
-    return tile;
-  });
-  render($("#tiles"), tiles);
+function createTile([label, value]) {
+  const tile = cloneTemplate("tileTemplate");
+  fillText(tile, { ".tile-label": label, ".tile-value": value });
+
+  return tile;
 }
 
-export async function load() {
-  try {
-    store.status = await get("/api/status");
-  } catch (error) {
-    store.status = { running: false, error: error.message };
-  }
-  renderPill(store.status);
-  renderTiles(store.status);
-  if (store.status.paused) {
+function renderPauseButton(status) {
+  if (status.paused) {
     $("#pauseButton").textContent = "Resume";
   } else {
     $("#pauseButton").textContent = "Pause";
   }
 }
 
+export async function load() {
+  try {
+    store.status = await get(API.status);
+  } catch (error) {
+    store.status = { running: false, error: error.message };
+  }
+  renderPill(store.status);
+  render($("#tiles"), tileValues(store.status).map(createTile));
+  renderPauseButton(store.status);
+}
+
 async function action(path, message, body) {
   await run(post(path, body), message);
-  setTimeout(load, 600);
+  setTimeout(load, REFRESH_MS);
 }
 
 function togglePause() {
   if (store.status.paused) {
-    action("/api/game/pause", "Resumed", { on: false });
+    action(API.game.pause, "Resumed", { on: false });
   } else {
-    action("/api/game/pause", "Paused", { on: true });
+    action(API.game.pause, "Paused", { on: true });
   }
 }
 
 function forceGameOver() {
   if (confirm("Force a game over? The next map will load.")) {
-    action("/api/game/game-over", "Game over");
+    action(API.game.gameOver, "Game over");
   }
 }
 
@@ -111,7 +120,7 @@ function restartServer() {
     "Restart the server? The game is saved first and continues after the restart " +
     '(if startup is set to "Continue the last game").';
   if (confirm(message)) {
-    action("/api/game/restart", "Restarting…");
+    action(API.game.restart, "Restarting…");
   }
 }
 
@@ -121,14 +130,14 @@ function broadcast(event) {
   if (!message) {
     return;
   }
-  run(post("/api/game/say", { message }), "Sent");
+  run(post(API.game.say, { message }), "Sent");
   $("#sayMessage").value = "";
 }
 
 export function init() {
   $("#pauseButton").addEventListener("click", togglePause);
-  $("#waveButton").addEventListener("click", () => action("/api/game/next-wave", "Wave sent"));
-  $("#fillButton").addEventListener("click", () => action("/api/game/fill-core", "Core filled"));
+  $("#waveButton").addEventListener("click", () => action(API.game.nextWave, "Wave sent"));
+  $("#fillButton").addEventListener("click", () => action(API.game.fillCore, "Core filled"));
   $("#gameOverButton").addEventListener("click", forceGameOver);
   $("#restartButton").addEventListener("click", restartServer);
   $("#sayForm").addEventListener("submit", broadcast);

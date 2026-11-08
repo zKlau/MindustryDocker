@@ -1,27 +1,33 @@
-"""Saved games (files in config/saves)."""
-
 from .. import settings
+from ..common.constants import MSAV_EXTENSION
+from ..common.files import write_bytes
+from ..common.validation import is_msav, slot
 from ..server import server
-from ..validation import is_msav, slot
+
+AUTOSAVE_PREFIX = "auto_"
+
+
+def _describe(file):
+    stat = file.stat()
+
+    return {
+        "name": file.stem,
+        "size": stat.st_size,
+        "mtime": int(stat.st_mtime),
+        "auto": file.stem == settings.SESSION_SAVE or file.stem.startswith(AUTOSAVE_PREFIX),
+    }
 
 
 def list_all():
     if not settings.SAVES_DIR.exists():
         return []
-    files = sorted(settings.SAVES_DIR.glob("*.msav"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return [
-        {
-            "name": f.stem,
-            "size": f.stat().st_size,
-            "mtime": int(f.stat().st_mtime),
-            "auto": f.stem == settings.SESSION_SAVE or f.stem.startswith("auto_"),
-        }
-        for f in files
-    ]
+    files = settings.SAVES_DIR.glob(f"*{MSAV_EXTENSION}")
+
+    return [_describe(f) for f in sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)]
 
 
 def path(name):
-    return settings.SAVES_DIR / f"{slot(name)}.msav"
+    return settings.SAVES_DIR / f"{slot(name)}{MSAV_EXTENSION}"
 
 
 def save(name):
@@ -46,5 +52,4 @@ def upload(file_name, data):
     stem = file_name.rsplit(".", 1)[0].replace(" ", "_")
     if not is_msav(data):
         raise ValueError("Not a Mindustry save file")
-    settings.SAVES_DIR.mkdir(parents=True, exist_ok=True)
-    path(stem).write_bytes(data)
+    write_bytes(path(stem), data)

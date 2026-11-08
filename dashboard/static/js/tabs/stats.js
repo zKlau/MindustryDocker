@@ -1,33 +1,31 @@
-// Stats: sortable player leaderboard.
-import { get, post } from "../api.js";
-import { $, $$, cloneTemplate, emptyRow, fillText, render, run } from "../ui.js";
+import { get, post } from "../api/client.js";
+import { API } from "../api/endpoints.js";
+import { $, $$, cloneTemplate, fillText, onClick, render } from "../ui/dom.js";
+import { emptyRow, renderRows } from "../ui/table.js";
+import { run } from "../ui/toast.js";
+import { formatDate, formatDuration } from "../utils/format.js";
 
-const COLUMNS = 9;
+const TABLE = { columns: 9, emptyText: "No stats yet. They appear after players have been online." };
+const DEFAULT_SORT = "playtime";
+const NAME_SORT = "name";
 
 let players = [];
-let sortKey = "playtime";
+let sortKey = DEFAULT_SORT;
 let ascending = false;
-
-function formatDuration(seconds) {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
-}
 
 function formatLastSeen(player) {
   if (player.online) {
     return "now";
   }
-  return new Date(player.lastSeen * 1000).toLocaleString();
+
+  return formatDate(player.lastSeen);
 }
 
 function compare(a, b) {
-  if (sortKey === "name") {
+  if (sortKey === NAME_SORT) {
     return a.name.localeCompare(b.name);
   }
+
   return a[sortKey] - b[sortKey];
 }
 
@@ -38,6 +36,7 @@ function sortedPlayers() {
   if (!ascending) {
     visible.reverse();
   }
+
   return visible;
 }
 
@@ -56,16 +55,12 @@ function createRow(player, index) {
     ".stats-last-seen": formatLastSeen(player),
   });
   row.querySelector(".stats-online").hidden = !player.online;
+
   return row;
 }
 
 function renderTable() {
-  const visible = sortedPlayers();
-  if (visible.length === 0) {
-    render($("#statsRows"), [emptyRow(COLUMNS, "No stats yet. They appear after players have been online.")]);
-    return;
-  }
-  render($("#statsRows"), visible.map(createRow));
+  renderRows($("#statsRows"), sortedPlayers(), createRow, TABLE);
 }
 
 function renderSortButtons() {
@@ -78,41 +73,33 @@ function renderSortButtons() {
 
 export async function load() {
   try {
-    const result = await get("/api/stats");
+    const result = await get(API.stats.leaderboard);
     players = result.players;
     renderTable();
   } catch (error) {
-    render($("#statsRows"), [emptyRow(COLUMNS, error.message)]);
+    render($("#statsRows"), [emptyRow(TABLE.columns, error.message)]);
   }
 }
 
 export const poll = load;
 
-function changeSort(event) {
-  const button = event.target.closest(".sort-button");
-  if (!button) {
-    return;
-  }
+function changeSort(button) {
   if (button.dataset.sort === sortKey) {
     ascending = !ascending;
   } else {
     sortKey = button.dataset.sort;
-    ascending = sortKey === "name";
+    ascending = sortKey === NAME_SORT;
   }
   renderSortButtons();
   renderTable();
 }
 
-async function removePlayer(event) {
-  const button = event.target.closest('button[data-action="remove"]');
-  if (!button) {
-    return;
-  }
+async function removePlayer(button) {
   const row = button.closest("tr");
   if (!confirm(`Remove the stats of ${row.dataset.name}?`)) {
     return;
   }
-  if (await run(post("/api/stats/remove", { id: row.dataset.id }), "Removed")) {
+  if (await run(post(API.stats.remove, { id: row.dataset.id }), "Removed")) {
     load();
   }
 }
@@ -121,14 +108,14 @@ async function resetAll() {
   if (!confirm("Reset the stats of every player? This can't be undone.")) {
     return;
   }
-  if (await run(post("/api/stats/reset"), "Stats reset")) {
+  if (await run(post(API.stats.reset), "Stats reset")) {
     load();
   }
 }
 
 export function init() {
-  $(".stats-table thead").addEventListener("click", changeSort);
+  onClick($(".stats-table thead"), ".sort-button", changeSort);
+  onClick($("#statsRows"), 'button[data-action="remove"]', removePlayer);
   $("#statsSearch").addEventListener("input", renderTable);
-  $("#statsRows").addEventListener("click", removePlayer);
   $("#resetStatsButton").addEventListener("click", resetAll);
 }

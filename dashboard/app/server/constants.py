@@ -1,0 +1,17 @@
+import re
+
+ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+QUERY_MARKER = re.compile(r"@@DASH:(\d+):(.*)$")
+QUERY_PREFIX = "@@DASH"
+READY_LINE = "Server loaded."
+SAVED_LINE = "Saved to"
+
+LOG_LINES_KEPT = 3000
+LOG_POLL_SECONDS = 0.2
+RESTART_DELAY_SECONDS = 3
+EXIT_TIMEOUT_SECONDS = 20
+SAVE_TIMEOUT_SECONDS = 10
+DEFAULT_QUERY_TIMEOUT = 5.0
+DEFAULT_LOG_WAIT_SECONDS = 10.0
+
+HOSTING_JS = "!Vars.state.isMenu()"

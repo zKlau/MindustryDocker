@@ -1,12 +1,10 @@
-"""Game rules: applied live and saved as the server's global rules so new maps use them too."""
-
-import json
-
 from .. import state
+from ..common.constants import TICKS_PER_SECOND
+from ..common.js import fill, literal
+from ..common.validation import non_negative_float, non_negative_int
 from ..server import server
 
-# name -> type. "seconds" is shown in seconds but stored by the game in ticks (60/s).
-RULES = {
+RULE_TYPES = {
     "waves": "bool",
     "waveTimer": "bool",
     "waitEnemies": "bool",
@@ -26,15 +24,6 @@ RULES = {
     "deconstructRefundMultiplier": "float",
 }
 
-
-def _coerce(kind, value):
-    if kind == "bool":
-        return bool(value)
-    if kind == "int":
-        return max(0, int(float(value)))
-    return max(0.0, float(value))
-
-
 READ_JS = """(function(){
   var rules = Vars.state.rules;
   var values = {};
@@ -45,34 +34,47 @@ READ_JS = """(function(){
 APPLY_JS = "(function(){ var r = Vars.state.rules; ASSIGNMENTS Call.setRules(r); return true; })()"
 
 
+def _coerce(kind, value):
+    if kind == "bool":
+        return bool(value)
+    if kind == "int":
+        return non_negative_int(value)
+
+    return non_negative_float(value)
+
+
+def _to_game(kind, value):
+    if kind == "seconds":
+        return value * TICKS_PER_SECOND
+
+    return value
+
+
 def current():
-    live = server.query(READ_JS.replace("KEYS", json.dumps(list(RULES))))
-    live["waveSpacing"] = round(live.get("waveSpacing", 0) / 60)
-    return {"live": live, "overrides": state.load()["rules"], "types": RULES}
+    live = server.query(fill(READ_JS, KEYS=literal(list(RULE_TYPES))))
+    live["waveSpacing"] = round(live.get("waveSpacing", 0) / TICKS_PER_SECOND)
+
+    return {"live": live, "overrides": state.section(state.RULES), "types": RULE_TYPES}
 
 
 def apply(values):
-    overrides = state.load()["rules"]
+    overrides = state.section(state.RULES)
     assignments = []
     for key, raw in values.items():
-        kind = RULES.get(key)
+        kind = RULE_TYPES.get(key)
         if kind is None:
             continue
         value = _coerce(kind, raw)
         overrides[key] = value
-        if kind == "seconds":
-            value_in_game = value * 60  # the game stores this in ticks
-        else:
-            value_in_game = value
-        game_value = json.dumps(value_in_game)
+        game_value = literal(_to_game(kind, value))
         server.send(f"rules add {key} {game_value}")
         assignments.append(f"r.{key}={game_value};")
-    state.update("rules", overrides)
+    state.update(state.RULES, overrides)
     if assignments and server.hosting():
-        server.query(APPLY_JS.replace("ASSIGNMENTS", " ".join(assignments)))
+        server.query(fill(APPLY_JS, ASSIGNMENTS=" ".join(assignments)))
 
 
 def reset():
-    for key in RULES:
+    for key in RULE_TYPES:
         server.send(f"rules remove {key}")
-    state.update("rules", {})
+    state.update(state.RULES, {})

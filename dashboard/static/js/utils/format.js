@@ -32,3 +32,13 @@ export function formatDuration(seconds) {
 export function formatDate(unixSeconds) {
   return new Date(unixSeconds * 1000).toLocaleString();
 }
+
+const COMPACT = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 });
+
+export function formatCount(count) {
+  if (Math.abs(count) < 10000) {
+    return count.toLocaleString();
+  }
+
+  return COMPACT.format(count);
+}

@@ -5,6 +5,7 @@ from ..common.text import on_off
 from ..common.threads import run_in_background
 from ..common.validation import text
 from ..server import server
+from .resources import CORE_JS, core_items
 
 MAX_MESSAGE_LENGTH = 200
 
@@ -28,6 +29,8 @@ STATUS_JS = """(function(){
     r.fps = Core.graphics.getFramesPerSecond();
     r.winWave = s.rules.winWave;
     r.minutes = Math.floor(s.tick / (TICKS * 60));
+    r.tick = s.tick;
+    r.core = CORE;
   }
   return r;
 })()"""
@@ -36,7 +39,11 @@ SAY_JS = "(function(){ Call.sendMessage('[scarlet][[Admin][] ' + MESSAGE); retur
 
 
 def status():
-    return {"running": server.alive(), **server.query(fill(STATUS_JS, TICKS=TICKS_PER_SECOND))}
+    result = server.query(fill(STATUS_JS, TICKS=TICKS_PER_SECOND, CORE=CORE_JS))
+    if result.get("hosting"):
+        result["core"] = core_items(result.get("core"), result["map"], result.pop("tick"))
+
+    return {"running": server.alive(), **result}
 
 
 def pause(on):

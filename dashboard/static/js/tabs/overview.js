@@ -6,6 +6,7 @@ import { setBadge } from "../ui/badges.js";
 import { $, cloneTemplate, fillText, render } from "../ui/dom.js";
 import { run } from "../ui/toast.js";
 import { capitalize, formatDuration } from "../utils/format.js";
+import { renderResources } from "./resources.js";
 
 function pillState(status) {
   if (status.error) {
@@ -93,6 +94,7 @@ export async function load() {
   }
   renderPill(store.status);
   render($("#tiles"), tileValues(store.status).map(createTile));
+  renderResources(store.status);
   renderPauseButton(store.status);
 }
 

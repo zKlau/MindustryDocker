@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="/css/pages/online.css" />
     <link rel="stylesheet" href="/css/pages/access.css" />
     <link rel="stylesheet" href="/css/pages/stats.css" />
+    <link rel="stylesheet" href="/css/pages/overview.css" />
     <script type="module" src="/js/main.js"></script>
   </head>
   <body>
@@ -52,6 +53,11 @@
       <main class="content">
         <section id="overview" class="tab-panel active">
           <div class="card"><div class="tiles" id="tiles"></div></div>
+          <div class="card" id="resourcesCard" hidden>
+            <h2>Core resources</h2>
+            <p class="hint" id="resourcesHint"></p>
+            <div class="resources" id="resources"></div>
+          </div>
           <div class="card">
             <h2>Quick actions</h2>
             <p class="hint">Changes apply to the running game immediately.</p>
@@ -480,6 +486,14 @@
     </div>
 
     <div class="toast" id="toast"></div>
+
+    <template id="resourceTemplate">
+      <div class="resource">
+        <span class="resource-icon"><img alt="" loading="lazy" /></span>
+        <span class="resource-amount"></span>
+        <span class="resource-rate"></span>
+      </div>
+    </template>
 
     <template id="tileTemplate">
       <div class="tile">

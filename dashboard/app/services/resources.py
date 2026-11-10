@@ -26,17 +26,18 @@ POWER_JS = """(function(){
   Vars.state.rules.defaultTeam.data().buildings.each(function(build){
     if (build.power != null) { graphs[build.power.graph.getID()] = build.power.graph; }
   });
+  var num = function(x){ return isFinite(x) ? x : 0; };
   var r = {networks: 0, short: 0, produced: 0, needed: 0, balance: 0, stored: 0, capacity: 0};
   for (var id in graphs) {
     var g = graphs[id];
     if (g.producers.isEmpty() && g.consumers.isEmpty() && g.batteries.isEmpty()) { continue; }
     r.networks++;
     if (g.getLastPowerNeeded() > 0 && g.getSatisfaction() < 0.999) { r.short++; }
-    r.produced += g.getLastScaledPowerIn();
-    r.needed += g.getLastScaledPowerOut();
-    r.balance += g.getPowerBalance();
-    r.stored += g.getLastPowerStored();
-    r.capacity += g.getLastCapacity();
+    r.produced += num(g.getLastScaledPowerIn());
+    r.needed += num(g.getLastScaledPowerOut());
+    r.balance += num(g.getPowerBalance());
+    r.stored += num(g.getLastPowerStored());
+    r.capacity += num(g.getLastCapacity());
   }
   return r.networks > 0 ? r : null;
 })()"""
@@ -49,16 +50,18 @@ LIQUIDS_JS = """(function(){
     if (!totals[name]) { totals[name] = {stored: 0, produced: 0, used: 0}; }
     return totals[name];
   };
-  var produce = function(liquid, amount){ if (amount > 0) { entry(liquid).produced += amount; } };
+  var valid = function(x){ return isFinite(x) && x > 0; };
+  var produce = function(liquid, amount){ if (valid(amount)) { entry(liquid).produced += amount; } };
   var consume = function(build, liquid, amount, consumer){
     if (consumer.optional && build.optionalEfficiency <= 0) { return; }
-    entry(liquid).used += amount * build.efficiency * build.timeScale * consumer.multiplier.get(build);
+    var used = amount * build.efficiency * build.timeScale * consumer.multiplier.get(build);
+    if (valid(used)) { entry(liquid).used += used; }
   };
   Vars.state.rules.defaultTeam.data().buildings.each(function(build){
     var block = build.block;
     if (build.liquids != null) {
       any = true;
-      build.liquids.each(function(liquid, amount){ if (amount > 0) { entry(liquid).stored += amount; } });
+      build.liquids.each(function(liquid, amount){ if (valid(amount)) { entry(liquid).stored += amount; } });
     }
     if (build.lastPump !== undefined) {
       produce(build.liquidDrop, build.lastPump);
@@ -140,18 +143,25 @@ def core_items(core, map_name, tick):
     return {"capacity": core["capacity"], "items": items}
 
 
+def _per_second(per_tick):
+    if per_tick is None:
+        return 0
+
+    return per_tick * TICKS_PER_SECOND
+
+
 def power_totals(power):
     if power is None:
         return None
 
-    return {**power, **{field: power[field] * TICKS_PER_SECOND for field in PER_TICK_FIELDS}}
+    return {**power, **{field: _per_second(power[field]) for field in PER_TICK_FIELDS}}
 
 
 def liquid_totals(liquids):
     if liquids is None:
         return None
     totals = [
-        {**liquid, **{field: liquid[field] * TICKS_PER_SECOND for field in PER_TICK_LIQUID_FIELDS}}
+        {**liquid, **{field: _per_second(liquid[field]) for field in PER_TICK_LIQUID_FIELDS}}
         for liquid in liquids
     ]
 

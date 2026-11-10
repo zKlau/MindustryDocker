@@ -41,7 +41,69 @@ POWER_JS = """(function(){
   return r.networks > 0 ? r : null;
 })()"""
 
+LIQUIDS_JS = """(function(){
+  var totals = {};
+  var any = false;
+  var entry = function(liquid){
+    var name = String(liquid.name);
+    if (!totals[name]) { totals[name] = {stored: 0, produced: 0, used: 0}; }
+    return totals[name];
+  };
+  var produce = function(liquid, amount){ if (amount > 0) { entry(liquid).produced += amount; } };
+  var consume = function(build, liquid, amount, consumer){
+    if (consumer.optional && build.optionalEfficiency <= 0) { return; }
+    entry(liquid).used += amount * build.efficiency * build.timeScale * consumer.multiplier.get(build);
+  };
+  Vars.state.rules.defaultTeam.data().buildings.each(function(build){
+    var block = build.block;
+    if (build.liquids != null) {
+      any = true;
+      build.liquids.each(function(liquid, amount){ if (amount > 0) { entry(liquid).stored += amount; } });
+    }
+    if (build.lastPump !== undefined) {
+      produce(build.liquidDrop, build.lastPump);
+    } else if (build.liquidDrop !== undefined && build.liquidDrop != null) {
+      produce(build.liquidDrop, build.amount * block.pumpAmount * build.efficiency * build.timeScale);
+    } else if (block.outputLiquids !== undefined && block.outputLiquids != null) {
+      for (var i = 0; i < block.outputLiquids.length; i++) {
+        var stack = block.outputLiquids[i];
+        produce(stack.liquid, stack.amount * build.efficiency * build.timeScale);
+      }
+    } else if (block.outputLiquid !== undefined && block.outputLiquid != null) {
+      produce(block.outputLiquid.liquid, block.outputLiquid.amount * build.productionEfficiency);
+    }
+    if (build.efficiency <= 0) { return; }
+    for (var j = 0; j < block.consumers.length; j++) {
+      var c = block.consumers[j];
+      if (c.liquid !== undefined && c.liquid != null) {
+        consume(build, c.liquid, c.amount, c);
+      } else if (c.liquids !== undefined && c.liquids != null) {
+        for (var k = 0; k < c.liquids.length; k++) {
+          consume(build, c.liquids[k].liquid, c.liquids[k].amount, c);
+        }
+      }
+    }
+  });
+  if (!any) { return null; }
+  var result = [];
+  Vars.content.liquids().each(function(liquid){
+    var t = totals[String(liquid.name)];
+    if (!t) { return; }
+    result.push({
+      name: String(liquid.name),
+      label: String(liquid.localizedName),
+      color: String(liquid.color.toString()).substring(0, 6),
+      stored: t.stored,
+      produced: t.produced,
+      used: t.used
+    });
+  });
+  return result;
+})()"""
+
 PER_TICK_FIELDS = ("produced", "needed", "balance")
+PER_TICK_LIQUID_FIELDS = ("produced", "used")
+MIN_SHOWN_AMOUNT = 0.5
 
 _samples = collections.deque()
 _lock = threading.Lock()
@@ -83,3 +145,18 @@ def power_totals(power):
         return None
 
     return {**power, **{field: power[field] * TICKS_PER_SECOND for field in PER_TICK_FIELDS}}
+
+
+def liquid_totals(liquids):
+    if liquids is None:
+        return None
+    totals = [
+        {**liquid, **{field: liquid[field] * TICKS_PER_SECOND for field in PER_TICK_LIQUID_FIELDS}}
+        for liquid in liquids
+    ]
+
+    return [
+        liquid
+        for liquid in totals
+        if max(liquid["stored"], liquid["produced"], liquid["used"]) >= MIN_SHOWN_AMOUNT
+    ]

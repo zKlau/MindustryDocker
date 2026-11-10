@@ -27,12 +27,16 @@ function showSwatch(icon, color) {
   icon.style.background = `#${color}`;
 }
 
-function createResource(item) {
-  const element = cloneTemplate("resourceTemplate");
+export function setIcon(element, src, color) {
   const icon = $(".resource-icon", element);
   const image = $("img", icon);
-  image.addEventListener("error", () => showSwatch(icon, item.color));
-  image.src = `${ICON_DIR}/${item.name}.png`;
+  image.addEventListener("error", () => showSwatch(icon, color));
+  image.src = src;
+}
+
+function createResource(item) {
+  const element = cloneTemplate("resourceTemplate");
+  setIcon(element, `${ICON_DIR}/${item.name}.png`, item.color);
   element.title = item.label;
   $(".resource-amount", element).textContent = formatCount(item.amount);
   const { text, className } = rateState(item.rate);

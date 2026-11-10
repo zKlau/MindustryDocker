@@ -5,7 +5,7 @@ from ..common.text import on_off
 from ..common.threads import run_in_background
 from ..common.validation import text
 from ..server import server
-from .resources import CORE_JS, POWER_JS, core_items, power_totals
+from .resources import CORE_JS, LIQUIDS_JS, POWER_JS, core_items, liquid_totals, power_totals
 
 MAX_MESSAGE_LENGTH = 200
 
@@ -32,6 +32,7 @@ STATUS_JS = """(function(){
     r.tick = s.tick;
     r.core = CORE;
     r.power = POWER;
+    r.liquids = LIQUIDS;
   }
   return r;
 })()"""
@@ -40,10 +41,13 @@ SAY_JS = "(function(){ Call.sendMessage('[scarlet][[Admin][] ' + MESSAGE); retur
 
 
 def status():
-    result = server.query(fill(STATUS_JS, TICKS=TICKS_PER_SECOND, CORE=CORE_JS, POWER=POWER_JS))
+    result = server.query(
+        fill(STATUS_JS, TICKS=TICKS_PER_SECOND, CORE=CORE_JS, POWER=POWER_JS, LIQUIDS=LIQUIDS_JS)
+    )
     if result.get("hosting"):
         result["core"] = core_items(result.get("core"), result["map"], result.pop("tick"))
         result["power"] = power_totals(result.get("power"))
+        result["liquids"] = liquid_totals(result.get("liquids"))
 
     return {"running": server.alive(), **result}
 

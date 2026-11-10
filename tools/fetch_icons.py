@@ -8,7 +8,7 @@ SPRITES = "https://raw.githubusercontent.com/Anuken/Mindustry/{ref}/core/assets-
 ITEM_LISTING = (
     "https://api.github.com/repos/Anuken/Mindustry/contents/core/assets-raw/sprites/items?ref={ref}"
 )
-ITEM_PREFIX = "item-"
+LISTED_ICONS = {"item-": "items", "liquid-": "liquids"}
 POWER_ICONS = ("battery", "combustion-generator", "power-node", "diode")
 
 
@@ -17,14 +17,15 @@ def fetch(url):
         return response.read()
 
 
-def fetch_items(ref):
-    output = IMG / "items"
-    output.mkdir(parents=True, exist_ok=True)
+def fetch_listed(ref):
     entries = json.loads(fetch(ITEM_LISTING.format(ref=ref)))
-    icons = [e for e in entries if e["name"].startswith(ITEM_PREFIX) and e["name"].endswith(".png")]
-    for entry in icons:
-        (output / entry["name"].removeprefix(ITEM_PREFIX)).write_bytes(fetch(entry["download_url"]))
-    print(f"wrote {len(icons)} item icons to {output}")
+    for prefix, folder in LISTED_ICONS.items():
+        output = IMG / folder
+        output.mkdir(parents=True, exist_ok=True)
+        icons = [e for e in entries if e["name"].startswith(prefix) and e["name"].endswith(".png")]
+        for entry in icons:
+            (output / entry["name"].removeprefix(prefix)).write_bytes(fetch(entry["download_url"]))
+        print(f"wrote {len(icons)} icons to {output}")
 
 
 def fetch_power(ref):
@@ -36,7 +37,7 @@ def fetch_power(ref):
 
 
 def main(ref):
-    fetch_items(ref)
+    fetch_listed(ref)
     fetch_power(ref)
 
 

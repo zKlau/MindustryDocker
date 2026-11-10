@@ -6,6 +6,7 @@ import { setBadge } from "../ui/badges.js";
 import { $, cloneTemplate, fillText, render } from "../ui/dom.js";
 import { run } from "../ui/toast.js";
 import { capitalize, formatDuration } from "../utils/format.js";
+import { renderLiquids } from "./liquids.js";
 import { renderPower } from "./power.js";
 import { renderResources } from "./resources.js";
 
@@ -97,6 +98,7 @@ export async function load() {
   render($("#tiles"), tileValues(store.status).map(createTile));
   renderPower(store.status);
   renderResources(store.status);
+  renderLiquids(store.status);
   renderPauseButton(store.status);
 }
 
